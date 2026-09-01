@@ -1,98 +1,166 @@
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebcamPreview } from '@/native/WebcamPreview';
+import { WebcamServer } from '@/native/WebcamServer';
 import { colors, font, radius, space } from '@/shared/theme/tokens';
-import { LensSelector, ZoomSlider, FocusReticle, useTapToFocus } from '@/features/camera';
-import { StreamToggle, StreamStatusBadge, useStreamStore } from '@/features/streaming';
-import { PermissionGate } from '@/features/connection';
+import { useStreamStore } from '@/features/streaming';
 import { useSettingsStore } from '@/features/settings';
+import { usePairingToken, usePermissions } from '@/features/connection';
+import { Settings, HelpCircle, Wifi, Mic, MicOff, Power } from 'lucide-react-native';
 
 export default function Home() {
-  const { point, onLayout, onTouch } = useTapToFocus();
   const settings = useSettingsStore((s) => s.settings);
-  const error = useSettingsStore((s) => s.error);
-  const streamError = useStreamStore((s) => s.error);
+  const running = useStreamStore((s) => s.running);
+  const busy = useStreamStore((s) => s.busy);
+  const start = useStreamStore((s) => s.start);
+  const stop = useStreamStore((s) => s.stop);
+  const clients = useStreamStore((s) => s.clients);
+  const insets = useSafeAreaInsets();
+  
+  const { token } = usePairingToken();
+  const { allGranted } = usePermissions();
+
+  const toggleMic = async () => {
+    if (settings) {
+      await WebcamServer.updateSettings({ audio: { enabled: !settings.audio.enabled } });
+    }
+  };
+
+  const toggleServer = () => {
+    if (running) {
+      void stop();
+    } else {
+      void start(token ?? '');
+    }
+  };
+
+  const isStreaming = running && clients.length > 0;
+  // Use clientId as a stand-in for computer name until we parse MDNS/Host headers
+  const clientName = isStreaming ? clients[0].clientId : 'No Computer Connected';
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <View style={styles.previewWrap} onLayout={onLayout}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onTouch}>
-          <WebcamPreview style={StyleSheet.absoluteFill} />
+    <View style={styles.container}>
+      {/* Full Screen Background Video */}
+      <View style={StyleSheet.absoluteFill}>
+        {isStreaming && <WebcamPreview style={StyleSheet.absoluteFill} />}
+      </View>
+
+      {/* Top Left: Active Status */}
+      <View style={[styles.topLeft, { top: insets.top || space.md }]}>
+        <View style={styles.statusRow}>
+          <View style={[styles.dot, { backgroundColor: isStreaming ? colors.bad : colors.muted }]} />
+          <Text style={styles.statusText}>{isStreaming ? 'ACTIVE' : (running ? 'WAITING' : 'OFFLINE')}</Text>
+        </View>
+        <Text style={styles.clientText}>{clientName}</Text>
+      </View>
+
+      {/* Right Side HUD */}
+      <View style={[styles.rightHud, { top: insets.top || space.md }]}>
+        <Link href="/diagnostics" asChild>
+          <Pressable style={styles.iconButton}>
+            <HelpCircle size={22} color="#FFF" />
+          </Pressable>
+        </Link>
+        <Link href="/settings" asChild>
+          <Pressable style={styles.iconButton}>
+            <Settings size={22} color="#FFF" />
+          </Pressable>
+        </Link>
+        <Link href="/connection" asChild>
+          <Pressable style={styles.iconButton}>
+            <Wifi size={22} color="#FFF" />
+          </Pressable>
+        </Link>
+      </View>
+
+      {/* Bottom Center: Start/Stop Server Toggle */}
+      <View style={[styles.bottomCenter, { bottom: insets.bottom || space.xl }]}>
+        <Pressable 
+          style={[styles.powerButton, { backgroundColor: running ? 'rgba(245,82,94,0.8)' : 'rgba(30,30,30,0.8)' }]} 
+          onPress={toggleServer}
+          disabled={!allGranted || !token || busy}
+        >
+          <Power size={28} color="#FFF" />
         </Pressable>
-        <FocusReticle point={point} />
-        <View style={styles.overlayTop}>
-          <StreamStatusBadge />
-        </View>
-        <View style={styles.overlayBottom}>
-          <LensSelector />
-        </View>
       </View>
 
-      <View style={styles.controls}>
-        {streamError ? <Text style={styles.error}>{streamError}</Text> : null}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <PermissionGate />
-
-        <View style={styles.zoomRow}>
-          <Text style={styles.zoomLabel}>Zoom</Text>
-          <ZoomSlider />
-        </View>
-
-        <StreamToggle />
-
-        <View style={styles.links}>
-          <Link href="/settings/video" asChild>
-            <Pressable style={styles.link}><Text style={styles.linkText}>Video</Text></Pressable>
-          </Link>
-          <Link href="/settings/cinematic" asChild>
-            <Pressable style={styles.link}><Text style={styles.linkText}>Cinematic</Text></Pressable>
-          </Link>
-          <Link href="/settings/audio" asChild>
-            <Pressable style={styles.link}><Text style={styles.linkText}>Audio</Text></Pressable>
-          </Link>
-          <Link href="/connection" asChild>
-            <Pressable style={styles.link}><Text style={styles.linkText}>Connection</Text></Pressable>
-          </Link>
-          <Link href="/diagnostics" asChild>
-            <Pressable style={styles.link}><Text style={styles.linkText}>Diagnostics</Text></Pressable>
-          </Link>
-          <Link href="/settings/advanced" asChild>
-            <Pressable style={styles.link}><Text style={styles.linkText}>Advanced</Text></Pressable>
-          </Link>
-        </View>
-
-        {settings ? (
-          <Text style={styles.summary}>
-            {settings.resolution.height}p · {settings.fps}fps ·{' '}
-            {(settings.bitrate / 1e6).toFixed(0)}Mbps
-            {settings.cinematic.enabled ? ` · Cinematic f/${settings.cinematic.aperture.toFixed(1)}` : ''}
-            {settings.audio.enabled ? ' · mic on' : ' · mic off'}
-          </Text>
-        ) : null}
+      {/* Bottom Right: Mic Toggle */}
+      <View style={[styles.bottomRight, { bottom: insets.bottom || space.md }]}>
+        <Pressable style={styles.micButton} onPress={toggleMic}>
+          {settings?.audio.enabled ? <Mic size={24} color="#FFF" /> : <MicOff size={24} color="#FFF" />}
+        </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  previewWrap: { flex: 1, backgroundColor: '#000', overflow: 'hidden' },
-  overlayTop: { position: 'absolute', top: space.md, left: space.md },
-  overlayBottom: { position: 'absolute', bottom: space.md, left: space.md, right: space.md },
-  controls: { padding: space.lg, gap: space.md },
-  zoomRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  zoomLabel: { ...font.label, color: colors.muted, width: 44 },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  link: {
-    paddingVertical: space.sm, paddingHorizontal: space.md,
-    backgroundColor: colors.panelAlt, borderRadius: radius.sm,
+  container: { flex: 1, backgroundColor: '#000' },
+  topLeft: {
+    position: 'absolute',
+    left: space.md,
+    zIndex: 10,
   },
-  linkText: { ...font.label, color: colors.text, fontSize: 13 },
-  summary: { ...font.mono, color: colors.muted, textAlign: 'center' },
-  error: {
-    ...font.body, fontSize: 13, color: colors.bad, backgroundColor: 'rgba(245,82,94,0.10)',
-    padding: space.md, borderRadius: radius.sm, lineHeight: 18,
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statusText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  clientText: {
+    color: '#CCC',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  rightHud: {
+    position: 'absolute',
+    right: space.md,
+    gap: space.md,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(30,30,30,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomCenter: {
+    position: 'absolute',
+    alignSelf: 'center',
+    zIndex: 10,
+  },
+  powerButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomRight: {
+    position: 'absolute',
+    right: space.md,
+    zIndex: 10,
+  },
+  micButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: 'rgba(30,30,30,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -21,6 +21,7 @@ export interface WebcamServerAPI {
   /** Returns the FULL effective settings — the phone is the authority on what
    *  was actually applied. A requested 4K60 may come back as 4K30. */
   updateSettings(patch: SettingsPatch): Promise<Settings>;
+  openSystemVideoEffects(): void;
 
   focusAt(x: number, y: number): Promise<void>;
   setLens(lensId: string): Promise<Capabilities>;

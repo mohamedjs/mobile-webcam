@@ -20,9 +20,9 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.bg },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'mobile_webcam' }} />
-        <Stack.Screen name="connection" options={{ title: 'Connection' }} />
-        <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="connection" options={{ headerShown: false }} />
+        <Stack.Screen name="diagnostics" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>

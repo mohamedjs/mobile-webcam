@@ -6,3 +6,4 @@ export { Pill } from './Pill';
 export { Slider } from './Slider';
 export { Toggle } from './Toggle';
 export { Badge } from './Badge';
+export { NeumorphicView } from './NeumorphicView';

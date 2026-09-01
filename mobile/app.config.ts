@@ -10,6 +10,12 @@ const config: ExpoConfig = {
   slug: 'mobile-webcam',
   version: '1.0.0',
   orientation: 'portrait',
+  icon: './assets/images/icon.png',
+  splash: {
+    image: './assets/images/splash.png',
+    resizeMode: 'contain',
+    backgroundColor: '#000000',
+  },
   scheme: 'mobilewebcam',
   userInterfaceStyle: 'dark',
   // New Architecture is the default in SDK 56 — no legacy bridge fallback exists.
@@ -31,7 +37,7 @@ const config: ExpoConfig = {
     },
   },
   plugins: [
-    ['expo-build-properties', { ios: { deploymentTarget: '16.0' } }],
+    ['expo-build-properties', { ios: { deploymentTarget: '16.4' } }],
     './modules/webcam-server/plugin',
     'expo-router',
     'expo-secure-store',

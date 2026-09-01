@@ -1,5 +1,5 @@
 export const colors = {
-  bg: '#0B0D12',
+  bg: '#000000',          // Pure black for HUD
   panel: '#151922',
   panelAlt: '#1D2230',
   line: '#252B38',
