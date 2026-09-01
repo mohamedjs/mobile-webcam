@@ -63,6 +63,8 @@ compiler diagnostics on the first pass — it has only been checked statically.
 | [05-features.md](docs/05-features.md) | Feature specs with acceptance criteria |
 | [06-linux-integration.md](docs/06-linux-integration.md) | v4l2loopback, PipeWire, OBS, Meet |
 | [07-roadmap.md](docs/07-roadmap.md) | Phased delivery plan |
+| [08-running.md](docs/08-running.md) | **How to run it, and how to set up the iPhone app** |
+| [09-native-module.md](docs/09-native-module.md) | How the Swift module compiles and reaches JavaScript |
 
 **Implementers: read `00` and `01` before writing a single line.** `01` contains a
 directional constraint that, if violated, produces an architecture that cannot
