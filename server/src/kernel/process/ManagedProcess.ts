@@ -43,6 +43,8 @@ export class ManagedProcess {
   #child: PipedChild | null = null;
   #state: State = 'stopped';
   #restartTimer: NodeJS.Timeout | null = null;
+  /** Last few stderr lines, replayed at warn level if the process dies. */
+  #recentStderr: string[] = [];
   #healthyTimer: NodeJS.Timeout | null = null;
   #wantRunning = false;
 
@@ -72,6 +74,7 @@ export class ManagedProcess {
 
   #spawn(): void {
     this.#state = 'starting';
+    this.#recentStderr = [];
     const { command, args, env } = this.#opts;
     this.#log.info({ command, args }, 'spawning');
 
@@ -87,6 +90,8 @@ export class ManagedProcess {
     });
     createInterface({ input: child.stderr }).on('line', (line) => {
       this.#log.debug({ stream: 'stderr' }, line);
+      this.#recentStderr.push(line);
+      if (this.#recentStderr.length > 10) this.#recentStderr.shift();
       this.#opts.onStderrLine?.(line);
     });
 
@@ -115,7 +120,13 @@ export class ManagedProcess {
       }
 
       this.#state = 'stopped';
-      this.#log.warn({ code, signal }, 'exited unexpectedly');
+      // Replay the child's own stderr at warn. Without this the reason for the
+      // exit is invisible at the default log level, and the service reports
+      // "gave up after N failures" while never saying why.
+      this.#log.warn(
+        { code, signal, stderr: this.#recentStderr },
+        `exited unexpectedly${this.#recentStderr.length ? `: ${this.#recentStderr.at(-1)}` : ''}`,
+      );
 
       const decision = this.#policy.recordFailure();
       if (!decision.restart) {

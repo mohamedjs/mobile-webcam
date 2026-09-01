@@ -295,10 +295,23 @@ Start here always:
 npm run doctor
 ```
 
-### 7.1 `Connection refused` on port 8080
+### 7.1 `Connection refused`, or iproxy exits immediately
 
-`iproxy` is not running. A laptop-side problem — the service supervises it, so
-check the service logs.
+`iproxy` is not running, or it cannot bind its local port.
+
+**The local port is a frequent collision.** `8080` is a very common dev-server
+port; if anything already holds it, iproxy dies instantly with code 247. The
+device port must stay whatever the phone listens on, but the **local** end is
+free to move:
+
+```bash
+ss -ltnp | grep :8080                      # is something already there?
+curl -X PATCH http://127.0.0.1:47800/api/config \
+  -H 'Content-Type: application/json' -d '{"localPort":18080}'
+```
+
+The service replays a failed child's stderr at `warn`, so the real reason
+(`bind(): Address already in use`) appears in the log.
 
 ### 7.2 `Connection reset by peer`
 
@@ -308,6 +321,28 @@ serving. In order of likelihood:
 1. Local Network permission denied → §3 step 3
 2. App not open, or backgrounded / phone locked
 3. **Start server** never tapped
+
+### 7.2b Tunnel opens, TCP connects, but every request resets
+
+If a raw TCP connection to the tunnel succeeds while HTTP requests come back
+`Connection reset by peer`, the app is **accepting the request and then dying on
+it**. The listener stays up, so connections still establish — only requests fail.
+
+The usual cause is a main-thread violation in the request handler. UIKit
+(`UIDevice`, `UIApplication`) must never be touched from the HTTP queue.
+Everything device-related is now read once on the main thread and cached.
+
+Distinguish it from a closed port with two probes:
+
+```bash
+iproxy 19999 62078 &          # lockdownd — always listening on iOS
+curl -sS -m 5 http://127.0.0.1:19999/     # expect: Empty reply from server
+curl -sS -m 5 http://127.0.0.1:18080/health
+```
+
+`Empty reply` means the port is open and simply not HTTP. `Connection reset by
+peer` on the app's port, when the port is definitely open, means a crash in the
+handler — check the device console (§8 of docs/09).
 
 ### 7.3 No device found at all
 
