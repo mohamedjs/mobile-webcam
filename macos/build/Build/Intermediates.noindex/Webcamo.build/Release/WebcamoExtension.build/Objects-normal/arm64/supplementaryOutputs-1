@@ -1,0 +1,12 @@
+{
+  "/Users/tripklik/myProject/mobile-webcam/macos/WebcamoExtension/main.swift" : {
+    "abi-baseline-json" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension.abi.json",
+    "const-values" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.swiftconstvalues",
+    "dependencies" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.d",
+    "diagnostics" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.dia",
+    "objc-header" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-Swift.h",
+    "swiftdoc" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension.swiftdoc",
+    "swiftmodule" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension.swiftmodule",
+    "swiftsourceinfo" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension.swiftsourceinfo"
+  }
+}

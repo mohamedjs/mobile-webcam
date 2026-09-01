@@ -15,6 +15,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test -w @mobile-webcam/shared && npm run test -w @mobile-webcam/server",
     "doctor": "bash scripts/doctor.sh",
-    "setup:linux": "bash scripts/setup-linux.sh"
+    "setup:linux": "bash scripts/setup-linux.sh",
+    "setup:mac": "bash scripts/setup-mac.sh"
   }
 }

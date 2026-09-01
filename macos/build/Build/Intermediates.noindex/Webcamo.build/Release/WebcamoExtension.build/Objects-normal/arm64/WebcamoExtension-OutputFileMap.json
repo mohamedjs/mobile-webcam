@@ -1,0 +1,31 @@
+{
+  "" : {
+    "const-values" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.swiftconstvalues",
+    "dependencies" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.d",
+    "diagnostics" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary-emit-module.dia",
+    "pch" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoExtension-primary.swiftdeps"
+  },
+  "/Users/tripklik/myProject/mobile-webcam/macos/WebcamoExtension/MJPEGReader.swift" : {
+    "index-unit-output-path" : "/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/MJPEGReader.o",
+    "llvm-bc" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/MJPEGReader.bc",
+    "object" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/MJPEGReader.o"
+  },
+  "/Users/tripklik/myProject/mobile-webcam/macos/WebcamoExtension/WebcamoDeviceSource.swift" : {
+    "index-unit-output-path" : "/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoDeviceSource.o",
+    "llvm-bc" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoDeviceSource.bc",
+    "object" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoDeviceSource.o"
+  },
+  "/Users/tripklik/myProject/mobile-webcam/macos/WebcamoExtension/WebcamoProviderSource.swift" : {
+    "index-unit-output-path" : "/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoProviderSource.o",
+    "llvm-bc" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoProviderSource.bc",
+    "object" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/WebcamoProviderSource.o"
+  },
+  "/Users/tripklik/myProject/mobile-webcam/macos/WebcamoExtension/main.swift" : {
+    "index-unit-output-path" : "/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/main.o",
+    "llvm-bc" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/main.bc",
+    "object" : "/Users/tripklik/myProject/mobile-webcam/macos/build/Build/Intermediates.noindex/Webcamo.build/Release/WebcamoExtension.build/Objects-normal/arm64/main.o"
+  }
+}

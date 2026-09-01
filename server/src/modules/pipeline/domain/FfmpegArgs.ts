@@ -30,7 +30,10 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   if (profile === 'mjpeg') {
     args.push('-f', 'mjpeg');
   } else {
-    args.push('-fflags', '+genpts', '-use_wallclock_as_timestamps', '1');
+    args.push('-fflags', '+genpts+nobuffer', '-use_wallclock_as_timestamps', '1');
+    // A cable carries no jitter worth buffering for. Without these ffmpeg
+    // spends seconds probing and then holds a queue that shows up as lag.
+    args.push('-flags', 'low_delay', '-probesize', '32', '-analyzeduration', '0');
   }
 
   if (token) {

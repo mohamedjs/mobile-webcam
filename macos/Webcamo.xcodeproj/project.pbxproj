@@ -1,0 +1,516 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B4923DDE375F5F0B76388CB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7268400337D8F25C950BB37A /* Cocoa.framework */; };
+		60E9DE1BCA733DFBE5496E0D /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2D35ECBBD62C77E9C25DF2A /* main.swift */; };
+		6BF997EA84C3588B8E0B3DD5 /* ExtensionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA683F1BD104360265BDA606 /* ExtensionManager.swift */; };
+		7387662DAAB0C7481F9C8A8F /* WebcamoProviderSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E8EBC515E8F752598EB6E35 /* WebcamoProviderSource.swift */; };
+		76538305BA6B317130B03968 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7B9EBD1857372AF0981AA2 /* ContentView.swift */; };
+		A9D9EDCE768A2A4F301799FE /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7268400337D8F25C950BB37A /* Cocoa.framework */; };
+		B055D0BCD00E0B95820C117A /* MJPEGReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67AA4BAFF5B69B6D35BEC95 /* MJPEGReader.swift */; };
+		BC4CAE169FBEB84FE0BE881C /* WebcamoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C6894C1284655B22F40D9A /* WebcamoApp.swift */; };
+		BD4AC44538495D3B8DFF987D /* WebcamoExtension.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = BA54B0B0DC4939A0D34458D1 /* WebcamoExtension.systemextension */; };
+		E7F07AC4F0C0CED1826EDB9C /* WebcamoDeviceSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121EF3CF55A21A484E1A6049 /* WebcamoDeviceSource.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2AEC03D3DEF5A190CCF00122 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B773E09A70518C7053EAEF5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CAA5B4B488AC95E8436E03FB;
+			remoteInfo = WebcamoExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3AEE0899B1B553DB52D6A7D0 /* Embed System Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/SystemExtensions;
+			dstSubfolderSpec = 1;
+			files = (
+				BD4AC44538495D3B8DFF987D /* WebcamoExtension.systemextension in Embed System Extensions */,
+			);
+			name = "Embed System Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		121EF3CF55A21A484E1A6049 /* WebcamoDeviceSource.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WebcamoDeviceSource.swift; sourceTree = "<group>"; };
+		1F7B9EBD1857372AF0981AA2 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2E8EBC515E8F752598EB6E35 /* WebcamoProviderSource.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WebcamoProviderSource.swift; sourceTree = "<group>"; };
+		64BB8A57DBF7B1387FD9A5C1 /* Webcamo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Webcamo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7268400337D8F25C950BB37A /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
+		72C6894C1284655B22F40D9A /* WebcamoApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WebcamoApp.swift; sourceTree = "<group>"; };
+		BA54B0B0DC4939A0D34458D1 /* WebcamoExtension.systemextension */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = WebcamoExtension.systemextension; path = WebcamoExtension.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA683F1BD104360265BDA606 /* ExtensionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExtensionManager.swift; sourceTree = "<group>"; };
+		E67AA4BAFF5B69B6D35BEC95 /* MJPEGReader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MJPEGReader.swift; sourceTree = "<group>"; };
+		F2D35ECBBD62C77E9C25DF2A /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AAE3F4E721CB6EDBF15F532C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9D9EDCE768A2A4F301799FE /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B616B20145CABB4C6D2A5025 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B4923DDE375F5F0B76388CB /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		35AF09DA604963710411EDDB /* Webcamo */ = {
+			isa = PBXGroup;
+			children = (
+				72C6894C1284655B22F40D9A /* WebcamoApp.swift */,
+				1F7B9EBD1857372AF0981AA2 /* ContentView.swift */,
+				DA683F1BD104360265BDA606 /* ExtensionManager.swift */,
+			);
+			name = Webcamo;
+			path = Webcamo;
+			sourceTree = "<group>";
+		};
+		40CEAAB92E3AAA9FE93BDE20 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				64BB8A57DBF7B1387FD9A5C1 /* Webcamo.app */,
+				BA54B0B0DC4939A0D34458D1 /* WebcamoExtension.systemextension */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		694F1338C2A7D91D4C9F3908 /* OS X */ = {
+			isa = PBXGroup;
+			children = (
+				7268400337D8F25C950BB37A /* Cocoa.framework */,
+			);
+			name = "OS X";
+			sourceTree = "<group>";
+		};
+		C619095671FF0C63BBD97A6B = {
+			isa = PBXGroup;
+			children = (
+				40CEAAB92E3AAA9FE93BDE20 /* Products */,
+				DB555231C2EA0DE750C79FF7 /* Frameworks */,
+				35AF09DA604963710411EDDB /* Webcamo */,
+				C6956E351A2C61E5DDE1620E /* WebcamoExtension */,
+			);
+			sourceTree = "<group>";
+		};
+		C6956E351A2C61E5DDE1620E /* WebcamoExtension */ = {
+			isa = PBXGroup;
+			children = (
+				F2D35ECBBD62C77E9C25DF2A /* main.swift */,
+				2E8EBC515E8F752598EB6E35 /* WebcamoProviderSource.swift */,
+				121EF3CF55A21A484E1A6049 /* WebcamoDeviceSource.swift */,
+				E67AA4BAFF5B69B6D35BEC95 /* MJPEGReader.swift */,
+			);
+			name = WebcamoExtension;
+			path = WebcamoExtension;
+			sourceTree = "<group>";
+		};
+		DB555231C2EA0DE750C79FF7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				694F1338C2A7D91D4C9F3908 /* OS X */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		19A2B48D7D95FC24915AE990 /* Webcamo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 04C56925EB1F5E9656DF0E69 /* Build configuration list for PBXNativeTarget "Webcamo" */;
+			buildPhases = (
+				969E8D2525AA6CFAECBC5659 /* Sources */,
+				B616B20145CABB4C6D2A5025 /* Frameworks */,
+				AE9362057E901F1926CDB5D1 /* Resources */,
+				3AEE0899B1B553DB52D6A7D0 /* Embed System Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6B5AF3CBC2442EF013D6649E /* PBXTargetDependency */,
+			);
+			name = Webcamo;
+			productName = Webcamo;
+			productReference = 64BB8A57DBF7B1387FD9A5C1 /* Webcamo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CAA5B4B488AC95E8436E03FB /* WebcamoExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00DDF5EF8D5CC06B67378B9B /* Build configuration list for PBXNativeTarget "WebcamoExtension" */;
+			buildPhases = (
+				A45B48649805280349471328 /* Sources */,
+				AAE3F4E721CB6EDBF15F532C /* Frameworks */,
+				78FB70999141027A6808E913 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WebcamoExtension;
+			productName = WebcamoExtension;
+			productReference = BA54B0B0DC4939A0D34458D1 /* WebcamoExtension.systemextension */;
+			productType = "com.apple.product-type.system-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4B773E09A70518C7053EAEF5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = 24572227D99B77223B6B199A /* Build configuration list for PBXProject "Webcamo" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C619095671FF0C63BBD97A6B;
+			minimizedProjectReferenceProxies = 0;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 40CEAAB92E3AAA9FE93BDE20 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				19A2B48D7D95FC24915AE990 /* Webcamo */,
+				CAA5B4B488AC95E8436E03FB /* WebcamoExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		78FB70999141027A6808E913 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AE9362057E901F1926CDB5D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		969E8D2525AA6CFAECBC5659 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC4CAE169FBEB84FE0BE881C /* WebcamoApp.swift in Sources */,
+				76538305BA6B317130B03968 /* ContentView.swift in Sources */,
+				6BF997EA84C3588B8E0B3DD5 /* ExtensionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A45B48649805280349471328 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				60E9DE1BCA733DFBE5496E0D /* main.swift in Sources */,
+				7387662DAAB0C7481F9C8A8F /* WebcamoProviderSource.swift in Sources */,
+				E7F07AC4F0C0CED1826EDB9C /* WebcamoDeviceSource.swift in Sources */,
+				B055D0BCD00E0B95820C117A /* MJPEGReader.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		6B5AF3CBC2442EF013D6649E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = WebcamoExtension;
+			target = CAA5B4B488AC95E8436E03FB /* WebcamoExtension */;
+			targetProxy = 2AEC03D3DEF5A190CCF00122 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		09EA475101D5A1F0F9D741DB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 575ZJY3Y9A;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		3B0530A355462D73F4BB955E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Webcamo/Webcamo.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 575ZJY3Y9A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Webcamo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mobilewebcam.app.mac;
+				PRODUCT_NAME = Webcamo;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		54111E5A10AC527EE15C3BF4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WebcamoExtension/WebcamoExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 575ZJY3Y9A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WebcamoExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mobilewebcam.app.extension;
+				PRODUCT_NAME = WebcamoExtension;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				WRAPPER_EXTENSION = systemextension;
+			};
+			name = Release;
+		};
+		6D8EEF54B39CDB09CED47624 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WebcamoExtension/WebcamoExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 575ZJY3Y9A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WebcamoExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mobilewebcam.app.extension;
+				PRODUCT_NAME = WebcamoExtension;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				WRAPPER_EXTENSION = systemextension;
+			};
+			name = Debug;
+		};
+		C005A720AD5A8191C4021C52 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Webcamo/Webcamo.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 575ZJY3Y9A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Webcamo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mobilewebcam.app.mac;
+				PRODUCT_NAME = Webcamo;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C56F09328AAB0A48A4E3EBAF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 575ZJY3Y9A;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00DDF5EF8D5CC06B67378B9B /* Build configuration list for PBXNativeTarget "WebcamoExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				54111E5A10AC527EE15C3BF4 /* Release */,
+				6D8EEF54B39CDB09CED47624 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		04C56925EB1F5E9656DF0E69 /* Build configuration list for PBXNativeTarget "Webcamo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B0530A355462D73F4BB955E /* Release */,
+				C005A720AD5A8191C4021C52 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		24572227D99B77223B6B199A /* Build configuration list for PBXProject "Webcamo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09EA475101D5A1F0F9D741DB /* Debug */,
+				C56F09328AAB0A48A4E3EBAF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4B773E09A70518C7053EAEF5 /* Project object */;
+}

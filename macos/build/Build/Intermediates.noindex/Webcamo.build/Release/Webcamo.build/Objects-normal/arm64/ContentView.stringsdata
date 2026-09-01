@@ -1,0 +1,48 @@
+{
+  "source": "/Users/tripklik/myProject/mobile-webcam/macos/Webcamo/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "webcamo",
+        "location": {
+          "startingColumn": 12,
+          "startingLine": 9
+        }
+      },
+      {
+        "comment": "",
+        "key": "Turns the iPhone into a system camera for Meet, Zoom and OBS.",
+        "location": {
+          "startingColumn": 12,
+          "startingLine": 10
+        }
+      },
+      {
+        "comment": "",
+        "key": "Install camera",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Check phone",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 36
+        }
+      }
+    ]
+  },
+  "version": 1
+}

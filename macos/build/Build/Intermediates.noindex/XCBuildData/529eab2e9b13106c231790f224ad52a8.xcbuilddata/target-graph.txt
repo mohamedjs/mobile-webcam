@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'Webcamo' in project 'Webcamo'
+➜ Explicit dependency on target 'WebcamoExtension' in project 'Webcamo'
+Target 'WebcamoExtension' in project 'Webcamo' (no dependencies)

@@ -6,8 +6,8 @@ import type { ExpoConfig } from 'expo/config';
  * Use `expo prebuild` + an EAS development build. docs/00 §5 C2.
  */
 const config: ExpoConfig = {
-  name: 'mobile_webcam',
-  slug: 'mobile-webcam',
+  name: 'webcamo',
+  slug: 'webcamo',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',

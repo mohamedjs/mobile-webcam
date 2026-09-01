@@ -1,0 +1,16 @@
+{
+  "source": "/Users/tripklik/myProject/mobile-webcam/macos/Webcamo/WebcamoApp.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "webcamo",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 6
+        }
+      }
+    ]
+  },
+  "version": 1
+}
