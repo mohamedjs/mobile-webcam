@@ -1,0 +1,20 @@
+{
+  "name": "mobile_webcam",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "server"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "npm run build -w @mobile-webcam/shared && npm run build -w @mobile-webcam/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @mobile-webcam/shared && npm run test -w @mobile-webcam/server",
+    "doctor": "bash scripts/doctor.sh",
+    "setup:linux": "bash scripts/setup-linux.sh"
+  }
+}

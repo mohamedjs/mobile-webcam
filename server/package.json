@@ -1,0 +1,28 @@
+{
+  "name": "@mobile-webcam/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && mkdir -p dist/modules/api/static && cp -r src/modules/api/static/. dist/modules/api/static/",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "npm run build && node --test --experimental-strip-types test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@mobile-webcam/shared": "*",
+    "fastify": "^5.0.0",
+    "@fastify/websocket": "^11.0.0",
+    "@fastify/static": "^8.0.0",
+    "pino": "^9.4.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "pino-pretty": "^11.2.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

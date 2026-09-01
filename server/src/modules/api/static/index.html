@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>mobile_webcam</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#171a21; --line:#252a34; --text:#e6e8ee;
+    --muted:#8b93a7; --accent:#4c8dff; --ok:#3ecf8e; --warn:#f5a524; --bad:#f5525e;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f7f9; --panel:#fff; --line:#e3e6ec; --text:#12141a; --muted:#666e80; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { padding:16px 20px; border-bottom:1px solid var(--line); display:flex;
+           align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; font-weight:600; }
+  .badge { padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;
+           background:var(--line); color:var(--muted); }
+  .badge.on { background:rgba(62,207,142,.15); color:var(--ok); }
+  .badge.off { background:rgba(245,82,94,.15); color:var(--bad); }
+  .badge.warn { background:rgba(245,165,36,.15); color:var(--warn); }
+  main { padding:20px; display:grid; gap:16px;
+         grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); max-width:1200px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em;
+       color:var(--muted); margin:0 0 12px; font-weight:600; }
+  .row { display:flex; justify-content:space-between; align-items:center;
+         padding:7px 0; border-bottom:1px solid var(--line); gap:12px; }
+  .row:last-child { border-bottom:0; }
+  .row span:first-child { color:var(--muted); }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
+         background:var(--bg); padding:2px 6px; border-radius:4px; word-break:break-all; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:7px;
+           padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  select, input[type=range] { background:var(--bg); color:var(--text);
+           border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-size:13px; }
+  input[type=range] { padding:0; width:140px; }
+  #log { font-family:ui-monospace,monospace; font-size:11.5px; max-height:220px;
+         overflow:auto; background:var(--bg); border-radius:6px; padding:10px; margin:0;
+         white-space:pre-wrap; }
+  .metric { font-variant-numeric:tabular-nums; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>mobile_webcam</h1>
+  <span class="badge" id="state">connecting…</span>
+  <span class="badge" id="device">no device</span>
+  <span class="badge" id="degraded" hidden>degraded</span>
+</header>
+
+<main>
+  <section>
+    <h2>Status</h2>
+    <div class="row"><span>Pipeline</span><span id="s-state">—</span></div>
+    <div class="row"><span>Profile</span><span id="s-profile">—</span></div>
+    <div class="row"><span>Video device</span><span id="s-video">—</span></div>
+    <div class="row"><span>Microphone</span><span id="s-audio">—</span></div>
+    <div class="row"><span>OBS direct URL</span><code id="s-url">—</code></div>
+    <div class="actions">
+      <button id="start">Start</button>
+      <button id="stop" class="ghost">Stop</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Live metrics</h2>
+    <div class="row"><span>FPS</span><span class="metric" id="m-fps">—</span></div>
+    <div class="row"><span>Bitrate</span><span class="metric" id="m-bitrate">—</span></div>
+    <div class="row"><span>Dropped frames</span><span class="metric" id="m-drops">—</span></div>
+    <div class="row"><span>Dropped segments</span><span class="metric" id="m-segs">—</span></div>
+    <div class="row"><span>Thermal</span><span class="metric" id="m-thermal">—</span></div>
+    <div class="row"><span>Battery</span><span class="metric" id="m-battery">—</span></div>
+  </section>
+
+  <section>
+    <h2>Camera</h2>
+    <div class="row"><span>Lens</span><select id="c-lens"></select></div>
+    <div class="row"><span>Resolution</span><select id="c-res"></select></div>
+    <div class="row"><span>Frame rate</span><select id="c-fps"></select></div>
+    <div class="row"><span>Zoom</span><input type="range" id="c-zoom" min="1" max="8" step="0.1" /></div>
+    <div class="row"><span>Bitrate</span><input type="range" id="c-bitrate" min="1" max="40" step="1" /></div>
+    <div class="row"><span>Mirror</span><input type="checkbox" id="c-mirror" /></div>
+    <div class="row"><span>Torch</span><input type="checkbox" id="c-torch" /></div>
+  </section>
+
+  <section>
+    <h2>Cinematic</h2>
+    <div class="row"><span>Enabled</span><input type="checkbox" id="c-cine" /></div>
+    <div class="row"><span>Aperture</span><input type="range" id="c-aperture" min="2" max="16" step="0.1" /></div>
+    <div class="row"><span>Support</span><span id="c-cine-support">—</span></div>
+    <div class="row"><span>Microphone</span><input type="checkbox" id="c-mic" /></div>
+  </section>
+
+  <section style="grid-column:1/-1">
+    <h2>Events</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const log = (msg) => {
+  const el = $('log');
+  el.textContent = `${new Date().toLocaleTimeString()}  ${msg}\n` + el.textContent;
+  if (el.textContent.length > 12000) el.textContent = el.textContent.slice(0, 12000);
+};
+
+let settings = null, caps = null, suppress = false;
+
+async function api(path, opts) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: opts?.body ? { 'Content-Type': 'application/json' } : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message ?? 'request failed');
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+async function patch(body) {
+  if (suppress) return;
+  try {
+    settings = await api('/api/settings', { method: 'PATCH', body: JSON.stringify(body) });
+    log(`applied ${Object.keys(body).join(', ')}`);
+  } catch (e) {
+    log(`rejected: ${e.message}`);
+    await loadSettings();   // never leave the UI showing a value the camera refused
+  }
+}
+
+function setState(s) {
+  const el = $('state');
+  el.textContent = s ?? '—';
+  el.className = 'badge ' + (s === 'STREAMING' ? 'on' : s === 'NO_DEVICE' ? 'off' : 'warn');
+  $('s-state').textContent = s ?? '—';
+}
+
+async function loadStatus() {
+  try {
+    const st = await api('/api/status');
+    setState(st.state);
+    $('s-profile').textContent = st.directMode ? 'direct (OBS)' : st.profile;
+    $('s-video').textContent = st.video.exists ? `${st.video.path} — ${st.video.label}` : 'missing';
+    $('s-audio').textContent = st.audio.monitor;
+    $('s-url').textContent = st.streamUrl;
+    const d = $('device');
+    d.textContent = st.device ? `${st.device.name} · iOS ${st.device.ios}` : 'no device';
+    d.className = 'badge ' + (st.device ? 'on' : 'off');
+    $('degraded').hidden = !st.degraded;
+  } catch (e) { log(`status: ${e.message}`); }
+}
+
+function fillSelect(el, items, value) {
+  el.innerHTML = '';
+  for (const it of items) {
+    const o = document.createElement('option');
+    o.value = it.value; o.textContent = it.label;
+    if (String(it.value) === String(value)) o.selected = true;
+    el.appendChild(o);
+  }
+}
+
+async function loadSettings() {
+  try {
+    [settings, caps] = await Promise.all([api('/api/settings'), api('/api/capabilities')]);
+  } catch { return; }
+  suppress = true;
+
+  fillSelect($('c-lens'), caps.lenses.map((l) => ({ value: l.id, label: l.label })), settings.lens);
+  fillSelect($('c-res'),
+    caps.resolutions.map((r) => ({ value: `${r.width}x${r.height}`, label: `${r.height}p` })),
+    `${settings.resolution.width}x${settings.resolution.height}`);
+  const mode = caps.resolutions.find((r) =>
+    r.width === settings.resolution.width && r.height === settings.resolution.height);
+  fillSelect($('c-fps'),
+    [24, 30, 60].filter((f) => f <= (mode?.maxFps ?? 60)).map((f) => ({ value: f, label: `${f} fps` })),
+    settings.fps);
+
+  const lens = caps.lenses.find((l) => l.id === settings.lens);
+  $('c-zoom').min = lens?.minZoom ?? 1;
+  $('c-zoom').max = lens?.maxZoom ?? 8;
+  $('c-zoom').value = settings.zoom;
+  $('c-bitrate').value = Math.round(settings.bitrate / 1_000_000);
+  $('c-mirror').checked = settings.mirror;
+  $('c-torch').checked = settings.torch;
+  $('c-cine').checked = settings.cinematic.enabled;
+  $('c-cine').disabled = !caps.cinematic.supported;
+  $('c-aperture').value = settings.cinematic.aperture;
+  $('c-mic').checked = settings.audio.enabled;
+  $('c-cine-support').textContent = caps.cinematic.supported
+    ? `tier ${caps.cinematic.tier}` : 'not supported on this device';
+
+  suppress = false;
+}
+
+// debounce continuous controls: a dragged slider must not fire 50 requests
+const debounce = (fn, ms = 120) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
+$('c-lens').onchange = (e) => patch({ lens: e.target.value });
+$('c-res').onchange = (e) => {
+  const [width, height] = e.target.value.split('x').map(Number);
+  patch({ resolution: { width, height } });
+};
+$('c-fps').onchange = (e) => patch({ fps: Number(e.target.value) });
+$('c-zoom').oninput = debounce((e) => patch({ zoom: Number(e.target.value) }));
+$('c-bitrate').oninput = debounce((e) => patch({ bitrate: Number(e.target.value) * 1_000_000 }));
+$('c-mirror').onchange = (e) => patch({ mirror: e.target.checked });
+$('c-torch').onchange = (e) => patch({ torch: e.target.checked });
+$('c-cine').onchange = (e) => patch({ cinematic: { enabled: e.target.checked } });
+$('c-aperture').oninput = debounce((e) => patch({ cinematic: { aperture: Number(e.target.value) } }));
+$('c-mic').onchange = (e) => patch({ audio: { enabled: e.target.checked } });
+
+$('start').onclick = async () => {
+  try { await api('/api/stream/start', { method: 'POST' }); log('start requested'); }
+  catch (e) { log(`start failed: ${e.message}`); }
+};
+$('stop').onclick = async () => {
+  try { await api('/api/stream/stop', { method: 'POST' }); log('stop requested'); }
+  catch (e) { log(`stop failed: ${e.message}`); }
+};
+
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/api/ws`);
+  ws.onopen = () => log('connected to service');
+  ws.onclose = () => { log('disconnected — retrying in 2s'); setTimeout(connect, 2000); };
+  ws.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.type === 'state') { setState(m.to); loadStatus(); if (m.to === 'READY') loadSettings(); }
+    else if (m.type === 'telemetry') {
+      const s = m.sample;
+      $('m-fps').textContent = s.fps.toFixed(1);
+      $('m-bitrate').textContent = `${(s.bitrate / 1e6).toFixed(2)} Mbps`;
+      $('m-drops').textContent = s.droppedFrames;
+      $('m-segs').textContent = s.droppedSegments;
+      $('m-thermal').textContent = s.thermalState;
+      $('m-battery').textContent = s.battery == null ? '—' : `${Math.round(s.battery * 100)}%`;
+    }
+    else if (m.type === 'settings') { settings = m.settings; loadSettings(); }
+    else if (m.type === 'device') { loadStatus(); if (m.connected) log(`device: ${m.name}`); }
+    else if (m.type === 'error') log(`error [${m.code}]: ${m.message}`);
+    else if (m.type === 'degraded') { log(`degraded (${m.reason}): ${m.action}`); $('degraded').hidden = false; }
+  };
+}
+
+loadStatus(); loadSettings(); connect();
+setInterval(loadStatus, 10000);
+</script>
+</body>
+</html>
