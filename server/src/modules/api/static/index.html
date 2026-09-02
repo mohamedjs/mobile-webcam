@@ -1,166 +1,189 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>mobile_webcam</title>
+<script src="./tailwind.js"></script>
+<script>
+  // Vendored Tailwind: the control UI has to work with no internet, since the
+  // whole point of the project is a cable and no cloud.
+  tailwind.config = { darkMode: 'class' };
+</script>
 <style>
-  :root {
-    --bg:#0f1115; --panel:#171a21; --line:#252a34; --text:#e6e8ee;
-    --muted:#8b93a7; --accent:#4c8dff; --ok:#3ecf8e; --warn:#f5a524; --bad:#f5525e;
-  }
-  @media (prefers-color-scheme: light) {
-    :root { --bg:#f6f7f9; --panel:#fff; --line:#e3e6ec; --text:#12141a; --muted:#666e80; }
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text);
-         font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
-  header { padding:16px 20px; border-bottom:1px solid var(--line); display:flex;
-           align-items:center; gap:12px; flex-wrap:wrap; }
-  h1 { font-size:16px; margin:0; font-weight:600; }
-  .badge { padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;
-           background:var(--line); color:var(--muted); }
-  .badge.on { background:rgba(62,207,142,.15); color:var(--ok); }
-  .badge.off { background:rgba(245,82,94,.15); color:var(--bad); }
-  .badge.warn { background:rgba(245,165,36,.15); color:var(--warn); }
-  main { padding:20px; display:grid; gap:16px;
-         grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); max-width:1200px; }
-  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em;
-       color:var(--muted); margin:0 0 12px; font-weight:600; }
-  .row { display:flex; justify-content:space-between; align-items:center;
-         padding:7px 0; border-bottom:1px solid var(--line); gap:12px; }
-  .row:last-child { border-bottom:0; }
-  .row span:first-child { color:var(--muted); }
-  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
-         background:var(--bg); padding:2px 6px; border-radius:4px; word-break:break-all; }
-  button { background:var(--accent); color:#fff; border:0; border-radius:7px;
-           padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; }
-  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
-  button:disabled { opacity:.45; cursor:not-allowed; }
-  .actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
-  select, input[type=range] { background:var(--bg); color:var(--text);
-           border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-size:13px; }
-  input[type=range] { padding:0; width:140px; }
-  #log { font-family:ui-monospace,monospace; font-size:11.5px; max-height:220px;
-         overflow:auto; background:var(--bg); border-radius:6px; padding:10px; margin:0;
-         white-space:pre-wrap; }
-  .metric { font-variant-numeric:tabular-nums; font-weight:600; }
+  input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:#3f3f46}
+  html:not(.dark) input[type=range]{background:#d4d4d8}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#3b82f6;cursor:pointer}
+  input[type=range]:disabled{opacity:.4}
 </style>
 </head>
-<body>
-<header>
-  <h1>mobile_webcam</h1>
-  <span class="badge" id="state">connecting…</span>
-  <span class="badge" id="device">no device</span>
-  <span class="badge" id="degraded" hidden>degraded</span>
-</header>
+<body class="bg-zinc-100 text-zinc-900 dark:bg-[#0b0b0d] dark:text-zinc-100 antialiased">
 
-<main>
-  <section>
-    <h2>Status</h2>
-    <div class="row"><span>Pipeline</span><span id="s-state">—</span></div>
-    <div class="row"><span>Profile</span><span id="s-profile">—</span></div>
-    <div class="row"><span>Video device</span><span id="s-video">—</span></div>
-    <div class="row"><span>Microphone</span><span id="s-audio">—</span></div>
-    <div class="row"><span>OBS direct URL</span><code id="s-url">—</code></div>
-    <div class="actions">
-      <button id="start">Start</button>
-      <button id="stop" class="ghost">Stop</button>
+<div class="flex h-screen flex-col">
+
+  <!-- ── top bar ─────────────────────────────────────────────────────── -->
+  <header class="flex shrink-0 items-center gap-3 border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-800">
+    <div>
+      <div class="text-sm font-semibold leading-tight">mobile_webcam</div>
+      <div id="device-name" class="text-[11px] leading-tight text-zinc-500">no device</div>
     </div>
-  </section>
 
-  <section>
-    <h2>Live metrics</h2>
-    <div class="row"><span>FPS</span><span class="metric" id="m-fps">—</span></div>
-    <div class="row"><span>Bitrate</span><span class="metric" id="m-bitrate">—</span></div>
-    <div class="row"><span>Dropped frames</span><span class="metric" id="m-drops">—</span></div>
-    <div class="row"><span>Dropped segments</span><span class="metric" id="m-segs">—</span></div>
-    <div class="row"><span>Thermal</span><span class="metric" id="m-thermal">—</span></div>
-    <div class="row"><span>Battery</span><span class="metric" id="m-battery">—</span></div>
-  </section>
+    <span id="pill-state" class="rounded-full px-2.5 py-1 text-[11px] font-medium">—</span>
+    <span id="pill-degraded" class="hidden rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">degraded</span>
 
-  <section>
-    <h2>Camera</h2>
-    <div class="row"><span>Lens</span><select id="c-lens"></select></div>
-    <div class="row"><span>Resolution</span><select id="c-res"></select></div>
-    <div class="row"><span>Frame rate</span><select id="c-fps"></select></div>
-    <div class="row"><span>Zoom</span><input type="range" id="c-zoom" min="1" max="8" step="0.1" /></div>
-    <div class="row"><span>Bitrate</span><input type="range" id="c-bitrate" min="1" max="40" step="1" /></div>
-    <div class="row"><span>Mirror</span><input type="checkbox" id="c-mirror" /></div>
-    <div class="row"><span>Torch</span><input type="checkbox" id="c-torch" /></div>
-  </section>
+    <!-- The numbers people actually trust: measured, not requested. -->
+    <div class="ml-auto flex items-center gap-4 text-right">
+      <div>
+        <div id="hud-res" class="text-xs font-semibold tabular-nums">—</div>
+        <div id="hud-fps" class="text-[11px] leading-tight text-zinc-500 tabular-nums">— fps</div>
+      </div>
+      <button id="btn-start" class="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-500">Start</button>
+      <button id="btn-stop"  class="rounded-lg bg-zinc-200 px-3.5 py-1.5 text-xs font-semibold hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700">Stop</button>
+      <button id="btn-theme" class="rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs dark:border-zinc-700" title="Light / dark">◐</button>
+    </div>
+  </header>
 
-  <section>
-    <h2>Cinematic</h2>
-    <div class="row"><span>Enabled</span><input type="checkbox" id="c-cine" /></div>
-    <div class="row"><span>Aperture</span><input type="range" id="c-aperture" min="2" max="16" step="0.1" /></div>
-    <div class="row"><span>Support</span><span id="c-cine-support">—</span></div>
-    <div class="row"><span>Microphone</span><input type="checkbox" id="c-mic" /></div>
-  </section>
+  <div class="flex min-h-0 flex-1">
 
-  <section style="grid-column:1/-1">
-    <h2>Events</h2>
-    <pre id="log"></pre>
-  </section>
-</main>
+    <!-- ── left: every control ───────────────────────────────────────── -->
+    <aside class="w-[320px] shrink-0 overflow-y-auto border-r border-zinc-200 p-3 dark:border-zinc-800">
 
-<script type="module">
+      <section class="mb-4">
+        <h2 class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Camera</h2>
+        <div class="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <label class="block">
+            <span class="mb-1 block text-xs text-zinc-500">Lens</span>
+            <select id="c-lens" class="w-full rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"></select>
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-xs text-zinc-500">Resolution</span>
+            <select id="c-res" class="w-full rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"></select>
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-xs text-zinc-500">Frame rate</span>
+            <select id="c-fps" class="w-full rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700"></select>
+          </label>
+          <label class="block">
+            <span class="mb-1 flex justify-between text-xs text-zinc-500"><span>Zoom</span><span id="v-zoom" class="tabular-nums">1.0×</span></span>
+            <input type="range" id="c-zoom" class="w-full" min="1" max="8" step="0.1" />
+          </label>
+          <label class="block">
+            <span class="mb-1 flex justify-between text-xs text-zinc-500"><span>Bitrate</span><span id="v-bitrate" class="tabular-nums">—</span></span>
+            <input type="range" id="c-bitrate" class="w-full" min="1000000" max="20000000" step="500000" />
+          </label>
+          <div class="flex items-center justify-between text-sm"><span>Mirror</span><input type="checkbox" id="c-mirror" class="h-4 w-4 accent-blue-600" /></div>
+          <div class="flex items-center justify-between text-sm"><span>Torch</span><input type="checkbox" id="c-torch" class="h-4 w-4 accent-blue-600" /></div>
+          <div class="flex items-center justify-between text-sm"><span>HDR</span><input type="checkbox" id="c-hdr" class="h-4 w-4 accent-blue-600" /></div>
+        </div>
+      </section>
+
+      <section class="mb-4">
+        <h2 class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Background blur</h2>
+        <div class="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="flex items-center justify-between text-sm"><span>Enabled</span><input type="checkbox" id="c-blur" class="h-4 w-4 accent-blue-600" /></div>
+          <label class="block">
+            <span class="mb-1 flex justify-between text-xs text-zinc-500"><span>Intensity</span><span id="v-blur" class="tabular-nums">—</span></span>
+            <input type="range" id="c-blur-amt" class="w-full" min="0" max="1" step="0.05" />
+          </label>
+          <p id="blur-warn" class="hidden text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+            Segmentation runs per frame on the phone. If the frame rate drops below the target, lower the resolution or turn blur off.
+          </p>
+        </div>
+      </section>
+
+      <section class="mb-4">
+        <h2 class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Cinematic</h2>
+        <div class="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="flex items-center justify-between text-sm"><span>Enabled</span><input type="checkbox" id="c-cine" class="h-4 w-4 accent-blue-600" /></div>
+          <label class="block">
+            <span class="mb-1 flex justify-between text-xs text-zinc-500"><span>Aperture</span><span id="v-aperture" class="tabular-nums">—</span></span>
+            <input type="range" id="c-aperture" class="w-full" min="1" max="16" step="0.1" />
+          </label>
+          <div id="cine-support" class="text-[11px] text-zinc-500"></div>
+        </div>
+      </section>
+
+      <section class="mb-4">
+        <h2 class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Audio</h2>
+        <div class="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="flex items-center justify-between text-sm"><span>Microphone</span><input type="checkbox" id="c-audio" class="h-4 w-4 accent-blue-600" /></div>
+          <div class="flex justify-between text-xs text-zinc-500"><span>Sink</span><span id="v-sink" class="truncate">—</span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Output</h2>
+        <div class="space-y-2 rounded-xl bg-white p-3 text-xs shadow-sm dark:bg-zinc-900/70">
+          <div class="flex justify-between"><span class="text-zinc-500">Profile</span><span id="v-profile">—</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Video device</span><span id="v-video">—</span></div>
+          <div><span class="text-zinc-500">Direct URL</span><code id="v-url" class="mt-1 block break-all rounded bg-zinc-100 p-1.5 text-[10px] dark:bg-black/40">—</code></div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ── right: preview + measured numbers ─────────────────────────── -->
+    <main class="flex min-w-0 flex-1 flex-col p-4">
+      <div class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl bg-black">
+        <img id="preview" class="hidden max-h-full max-w-full object-contain" alt="camera preview" />
+        <div id="preview-off" class="px-8 text-center">
+          <div class="text-sm text-zinc-400">Preview is off</div>
+          <p class="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-zinc-500">
+            The phone serves one stream at a time. Turning this on takes the stream
+            away from OBS or the v4l2 pipeline.
+          </p>
+          <button id="btn-preview" class="mt-3 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500">Show preview</button>
+        </div>
+        <button id="btn-preview-off" class="absolute right-3 top-3 hidden rounded-lg bg-black/60 px-2.5 py-1 text-xs text-white backdrop-blur">Hide</button>
+      </div>
+
+      <!-- Measured values, deliberately separate from the controls above so a
+           requested setting is never mistaken for what is actually happening. -->
+      <div class="mt-4 grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="text-[11px] text-zinc-500">Actual FPS</div><div id="m-fps" class="text-lg font-semibold tabular-nums">—</div>
+        </div>
+        <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="text-[11px] text-zinc-500">Actual size</div><div id="m-res" class="text-lg font-semibold tabular-nums">—</div>
+        </div>
+        <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="text-[11px] text-zinc-500">Bitrate</div><div id="m-bitrate" class="text-lg font-semibold tabular-nums">—</div>
+        </div>
+        <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="text-[11px] text-zinc-500">Dropped</div><div id="m-dropped" class="text-lg font-semibold tabular-nums">—</div>
+        </div>
+        <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="text-[11px] text-zinc-500">Thermal</div><div id="m-thermal" class="text-lg font-semibold">—</div>
+        </div>
+        <div class="rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+          <div class="text-[11px] text-zinc-500">Battery</div><div id="m-battery" class="text-lg font-semibold tabular-nums">—</div>
+        </div>
+      </div>
+
+      <div class="mt-3 shrink-0 rounded-xl bg-white p-3 shadow-sm dark:bg-zinc-900/70">
+        <div class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Events</div>
+        <pre id="events" class="max-h-24 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400"></pre>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
 const $ = (id) => document.getElementById(id);
-const log = (msg) => {
-  const el = $('log');
-  el.textContent = `${new Date().toLocaleTimeString()}  ${msg}\n` + el.textContent;
-  if (el.textContent.length > 12000) el.textContent = el.textContent.slice(0, 12000);
+const j = (r) => r.json();
+let caps = null, settings = null, status = null;
+let suppress = false;            // ignore change events while repainting
+
+// ── theme ────────────────────────────────────────────────────────────────
+const applyTheme = (t) => {
+  document.documentElement.classList.toggle('dark', t === 'dark');
+  localStorage.setItem('theme', t);
 };
+applyTheme(localStorage.getItem('theme') || 'dark');
+$('btn-theme').onclick = () =>
+  applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 
-let settings = null, caps = null, suppress = false;
-
-async function api(path, opts) {
-  const res = await fetch(path, {
-    ...opts,
-    headers: opts?.body ? { 'Content-Type': 'application/json' } : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message ?? 'request failed');
-  }
-  return res.status === 204 ? null : res.json();
-}
-
-async function patch(body) {
-  if (suppress) return;
-  try {
-    settings = await api('/api/settings', { method: 'PATCH', body: JSON.stringify(body) });
-    log(`applied ${Object.keys(body).join(', ')}`);
-  } catch (e) {
-    log(`rejected: ${e.message}`);
-    await loadSettings();   // never leave the UI showing a value the camera refused
-  }
-}
-
-function setState(s) {
-  const el = $('state');
-  el.textContent = s ?? '—';
-  el.className = 'badge ' + (s === 'STREAMING' ? 'on' : s === 'NO_DEVICE' ? 'off' : 'warn');
-  $('s-state').textContent = s ?? '—';
-}
-
-async function loadStatus() {
-  try {
-    const st = await api('/api/status');
-    setState(st.state);
-    $('s-profile').textContent = st.directMode ? 'direct (OBS)' : st.profile;
-    $('s-video').textContent = st.video.exists ? `${st.video.path} — ${st.video.label}` : 'missing';
-    $('s-audio').textContent = st.audio.monitor;
-    $('s-url').textContent = st.streamUrl;
-    const d = $('device');
-    d.textContent = st.device ? `${st.device.name} · iOS ${st.device.ios}` : 'no device';
-    d.className = 'badge ' + (st.device ? 'on' : 'off');
-    $('degraded').hidden = !st.degraded;
-  } catch (e) { log(`status: ${e.message}`); }
-}
-
-function fillSelect(el, items, value) {
+// ── helpers ──────────────────────────────────────────────────────────────
+const fill = (el, items, value) => {
   el.innerHTML = '';
   for (const it of items) {
     const o = document.createElement('option');
@@ -168,92 +191,182 @@ function fillSelect(el, items, value) {
     if (String(it.value) === String(value)) o.selected = true;
     el.appendChild(o);
   }
+};
+const mbps = (bits) => (bits / 1e6).toFixed(2) + ' Mbps';
+
+async function patch(body) {
+  const res = await fetch('/api/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) { log('rejected: ' + (await res.text()).slice(0, 120)); return; }
+  // The phone returns the FULL effective settings — a 4K60 request can come
+  // back as 4K30. Always repaint from the response, never from the input.
+  settings = await res.json();
+  paintSettings();
 }
 
-async function loadSettings() {
-  try {
-    [settings, caps] = await Promise.all([api('/api/settings'), api('/api/capabilities')]);
-  } catch { return; }
+const log = (line) => {
+  const el = $('events');
+  el.textContent = new Date().toLocaleTimeString() + '  ' + line + '\n' + el.textContent;
+};
+
+// ── painting ─────────────────────────────────────────────────────────────
+function paintSettings() {
+  if (!settings || !caps) return;
   suppress = true;
 
-  fillSelect($('c-lens'), caps.lenses.map((l) => ({ value: l.id, label: l.label })), settings.lens);
-  fillSelect($('c-res'),
-    caps.resolutions.map((r) => ({ value: `${r.width}x${r.height}`, label: `${r.height}p` })),
+  fill($('c-lens'), caps.lenses.map((l) => ({ value: l.id, label: l.label })), settings.lens);
+
+  const modes = caps.resolutions;
+  fill($('c-res'),
+    modes.map((r) => ({ value: `${r.width}x${r.height}`, label: `${r.height}p` })),
     `${settings.resolution.width}x${settings.resolution.height}`);
-  const mode = caps.resolutions.find((r) =>
-    r.width === settings.resolution.width && r.height === settings.resolution.height);
-  fillSelect($('c-fps'),
-    [24, 30, 60].filter((f) => f <= (mode?.maxFps ?? 60)).map((f) => ({ value: f, label: `${f} fps` })),
+
+  // Only offer frame rates the CHOSEN resolution can actually do, so the UI
+  // cannot request 60 at a size that caps at 30.
+  const mode = modes.find((r) => r.width === settings.resolution.width
+                              && r.height === settings.resolution.height);
+  const maxFps = mode?.maxFps ?? 30;
+  fill($('c-fps'),
+    [24, 30, 60, 120].filter((f) => f <= maxFps).map((f) => ({ value: f, label: f + ' fps' })),
     settings.fps);
 
   const lens = caps.lenses.find((l) => l.id === settings.lens);
   $('c-zoom').min = lens?.minZoom ?? 1;
   $('c-zoom').max = lens?.maxZoom ?? 8;
   $('c-zoom').value = settings.zoom;
-  $('c-bitrate').value = Math.round(settings.bitrate / 1_000_000);
+  $('v-zoom').textContent = Number(settings.zoom).toFixed(1) + '×';
+
+  $('c-bitrate').value = settings.bitrate;
+  $('v-bitrate').textContent = mbps(settings.bitrate);
+
   $('c-mirror').checked = settings.mirror;
   $('c-torch').checked = settings.torch;
+  $('c-hdr').checked = settings.hdr;
+  $('c-hdr').disabled = !caps.hdr;
+
+  $('c-blur').checked = settings.blurFallback.enabled;
+  $('c-blur-amt').value = settings.blurFallback.intensity;
+  $('c-blur-amt').disabled = !settings.blurFallback.enabled;
+  $('v-blur').textContent = Math.round(settings.blurFallback.intensity * 100) + '%';
+  $('blur-warn').classList.toggle('hidden', !settings.blurFallback.enabled);
+
   $('c-cine').checked = settings.cinematic.enabled;
   $('c-cine').disabled = !caps.cinematic.supported;
   $('c-aperture').value = settings.cinematic.aperture;
-  $('c-mic').checked = settings.audio.enabled;
-  $('c-cine-support').textContent = caps.cinematic.supported
-    ? `tier ${caps.cinematic.tier}` : 'not supported on this device';
+  $('c-aperture').disabled = !settings.cinematic.enabled;
+  $('v-aperture').textContent = 'f/' + Number(settings.cinematic.aperture).toFixed(1);
+  $('cine-support').textContent = caps.cinematic.supported
+    ? `tier ${caps.cinematic.tier} · up to ${caps.cinematic.maxFps} fps`
+    : 'not supported on this device';
 
+  $('c-audio').checked = settings.audio.enabled;
+
+  // Header shows what the phone accepted, not what was asked for.
+  $('hud-res').textContent = `${settings.resolution.width}×${settings.resolution.height}`;
   suppress = false;
 }
 
-// debounce continuous controls: a dragged slider must not fire 50 requests
-const debounce = (fn, ms = 120) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
-
-$('c-lens').onchange = (e) => patch({ lens: e.target.value });
-$('c-res').onchange = (e) => {
-  const [width, height] = e.target.value.split('x').map(Number);
-  patch({ resolution: { width, height } });
-};
-$('c-fps').onchange = (e) => patch({ fps: Number(e.target.value) });
-$('c-zoom').oninput = debounce((e) => patch({ zoom: Number(e.target.value) }));
-$('c-bitrate').oninput = debounce((e) => patch({ bitrate: Number(e.target.value) * 1_000_000 }));
-$('c-mirror').onchange = (e) => patch({ mirror: e.target.checked });
-$('c-torch').onchange = (e) => patch({ torch: e.target.checked });
-$('c-cine').onchange = (e) => patch({ cinematic: { enabled: e.target.checked } });
-$('c-aperture').oninput = debounce((e) => patch({ cinematic: { aperture: Number(e.target.value) } }));
-$('c-mic').onchange = (e) => patch({ audio: { enabled: e.target.checked } });
-
-$('start').onclick = async () => {
-  try { await api('/api/stream/start', { method: 'POST' }); log('start requested'); }
-  catch (e) { log(`start failed: ${e.message}`); }
-};
-$('stop').onclick = async () => {
-  try { await api('/api/stream/stop', { method: 'POST' }); log('stop requested'); }
-  catch (e) { log(`stop failed: ${e.message}`); }
-};
-
-function connect() {
-  const ws = new WebSocket(`ws://${location.host}/api/ws`);
-  ws.onopen = () => log('connected to service');
-  ws.onclose = () => { log('disconnected — retrying in 2s'); setTimeout(connect, 2000); };
-  ws.onmessage = (ev) => {
-    const m = JSON.parse(ev.data);
-    if (m.type === 'state') { setState(m.to); loadStatus(); if (m.to === 'READY') loadSettings(); }
-    else if (m.type === 'telemetry') {
-      const s = m.sample;
-      $('m-fps').textContent = s.fps.toFixed(1);
-      $('m-bitrate').textContent = `${(s.bitrate / 1e6).toFixed(2)} Mbps`;
-      $('m-drops').textContent = s.droppedFrames;
-      $('m-segs').textContent = s.droppedSegments;
-      $('m-thermal').textContent = s.thermalState;
-      $('m-battery').textContent = s.battery == null ? '—' : `${Math.round(s.battery * 100)}%`;
-    }
-    else if (m.type === 'settings') { settings = m.settings; loadSettings(); }
-    else if (m.type === 'device') { loadStatus(); if (m.connected) log(`device: ${m.name}`); }
-    else if (m.type === 'error') log(`error [${m.code}]: ${m.message}`);
-    else if (m.type === 'degraded') { log(`degraded (${m.reason}): ${m.action}`); $('degraded').hidden = false; }
-  };
+function paintStatus() {
+  if (!status) return;
+  const s = status.state;
+  const tone = s === 'STREAMING' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+             : s === 'NO_DEVICE' ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+             : 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+  $('pill-state').className = 'rounded-full px-2.5 py-1 text-[11px] font-medium ' + tone;
+  $('pill-state').textContent = s;
+  $('pill-degraded').classList.toggle('hidden', !status.degraded);
+  $('device-name').textContent = status.device
+    ? `${status.device.name} · iOS ${status.device.ios}` : 'no device';
+  $('v-profile').textContent = status.directMode ? `${status.profile} (direct)` : status.profile;
+  $('v-video').textContent = status.video.exists ? (status.video.label || status.video.path) : 'missing';
+  $('v-url').textContent = status.streamUrl;
+  $('v-sink').textContent = status.audio.monitor;
 }
 
-loadStatus(); loadSettings(); connect();
-setInterval(loadStatus, 10000);
+function paintTelemetry(t) {
+  if (!t) return;
+  // Measured frame rate from the pipeline, which is why it can disagree with
+  // the requested setting — that disagreement is the useful signal.
+  $('m-fps').textContent = (t.fps ?? 0).toFixed(1);
+  $('hud-fps').textContent = (t.fps ?? 0).toFixed(0) + ' fps';
+  $('m-bitrate').textContent = mbps(t.bitrate ?? 0);
+  $('m-dropped').textContent = `${t.droppedFrames ?? 0}/${t.droppedSegments ?? 0}`;
+  $('m-thermal').textContent = t.thermalState ?? '—';
+  $('m-battery').textContent = t.battery == null ? '—' : Math.round(t.battery * 100) + '%';
+  $('m-res').textContent = settings
+    ? `${settings.resolution.width}×${settings.resolution.height}` : '—';
+}
+
+// ── inputs ───────────────────────────────────────────────────────────────
+const on = (id, ev, fn) => $(id).addEventListener(ev, (e) => { if (!suppress) fn(e); });
+
+on('c-lens', 'change', (e) => patch({ lens: e.target.value }));
+on('c-res', 'change', (e) => {
+  const [width, height] = e.target.value.split('x').map(Number);
+  patch({ resolution: { width, height } });
+});
+on('c-fps', 'change', (e) => patch({ fps: Number(e.target.value) }));
+on('c-zoom', 'change', (e) => patch({ zoom: Number(e.target.value) }));
+on('c-zoom', 'input', (e) => { $('v-zoom').textContent = Number(e.target.value).toFixed(1) + '×'; });
+on('c-bitrate', 'change', (e) => patch({ bitrate: Number(e.target.value) }));
+on('c-bitrate', 'input', (e) => { $('v-bitrate').textContent = mbps(Number(e.target.value)); });
+on('c-mirror', 'change', (e) => patch({ mirror: e.target.checked }));
+on('c-torch', 'change', (e) => patch({ torch: e.target.checked }));
+on('c-hdr', 'change', (e) => patch({ hdr: e.target.checked }));
+on('c-blur', 'change', (e) => patch({ blurFallback: { enabled: e.target.checked } }));
+on('c-blur-amt', 'change', (e) => patch({ blurFallback: { intensity: Number(e.target.value) } }));
+on('c-blur-amt', 'input', (e) => { $('v-blur').textContent = Math.round(e.target.value * 100) + '%'; });
+on('c-cine', 'change', (e) => patch({ cinematic: { enabled: e.target.checked } }));
+on('c-aperture', 'change', (e) => patch({ cinematic: { aperture: Number(e.target.value) } }));
+on('c-aperture', 'input', (e) => { $('v-aperture').textContent = 'f/' + Number(e.target.value).toFixed(1); });
+on('c-audio', 'change', (e) => patch({ audio: { enabled: e.target.checked } }));
+
+$('btn-start').onclick = async () => { await fetch('/api/stream/start', { method: 'POST' }); refresh(); };
+$('btn-stop').onclick  = async () => { await fetch('/api/stream/stop',  { method: 'POST' }); refresh(); };
+
+// Preview consumes the single stream slot, so it is opt-in and explicit.
+const showPreview = (on) => {
+  const img = $('preview');
+  if (on) {
+    img.src = (status?.tunnel?.baseUrl ?? 'http://127.0.0.1:8080') + '/stream.mjpeg?t=' + Date.now();
+    img.classList.remove('hidden');
+    $('preview-off').classList.add('hidden');
+    $('btn-preview-off').classList.remove('hidden');
+  } else {
+    img.src = '';
+    img.classList.add('hidden');
+    $('preview-off').classList.remove('hidden');
+    $('btn-preview-off').classList.add('hidden');
+  }
+};
+$('btn-preview').onclick = () => showPreview(true);
+$('btn-preview-off').onclick = () => showPreview(false);
+
+// ── polling ──────────────────────────────────────────────────────────────
+async function refresh() {
+  try {
+    status = await fetch('/api/status').then(j);
+    paintStatus();
+    if (status.state !== 'NO_DEVICE') {
+      if (!caps) caps = await fetch('/api/capabilities').then(j).catch(() => null);
+      const s = await fetch('/api/settings').then(j).catch(() => null);
+      if (s && !s.error) { settings = s; paintSettings(); }
+    }
+    const t = await fetch('/api/telemetry').then(j).catch(() => null);
+    paintTelemetry(t?.latest);
+  } catch (e) { /* server restarting */ }
+}
+refresh();
+setInterval(refresh, 1000);
+
+// Server-sent events, when the API offers them.
+try {
+  const es = new EventSource('/api/events');
+  es.onmessage = (m) => log(m.data);
+} catch {}
 </script>
 </body>
 </html>

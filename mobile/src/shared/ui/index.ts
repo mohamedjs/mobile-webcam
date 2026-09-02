@@ -7,3 +7,4 @@ export { Slider } from './Slider';
 export { Toggle } from './Toggle';
 export { Badge } from './Badge';
 export { NeumorphicView } from './NeumorphicView';
+export { SettingsSheet, SheetSection } from './SettingsSheet';

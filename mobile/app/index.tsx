@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebcamPreview } from '@/native/WebcamPreview';
 import { WebcamServer } from '@/native/WebcamServer';
 import { colors, font, radius, space } from '@/shared/theme/tokens';
+import { SettingsSheet } from '@/shared/ui';
 import { useStreamStore } from '@/features/streaming';
-import { useSettingsStore } from '@/features/settings';
+import { useSettingsStore, SettingsSheetContent } from '@/features/settings';
 import { usePairingToken, usePermissions } from '@/features/connection';
 import { Settings, HelpCircle, Wifi, Mic, MicOff, Power } from 'lucide-react-native';
 
@@ -17,6 +19,7 @@ export default function Home() {
   const stop = useStreamStore((s) => s.stop);
   const clients = useStreamStore((s) => s.clients);
   const insets = useSafeAreaInsets();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   
   const { token } = usePairingToken();
   const { allGranted } = usePermissions();
@@ -62,11 +65,9 @@ export default function Home() {
             <HelpCircle size={22} color="#FFF" />
           </Pressable>
         </Link>
-        <Link href="/settings" asChild>
-          <Pressable style={styles.iconButton}>
-            <Settings size={22} color="#FFF" />
-          </Pressable>
-        </Link>
+        <Pressable style={styles.iconButton} onPress={() => setSettingsOpen(true)}>
+          <Settings size={22} color="#FFF" />
+        </Pressable>
         <Link href="/connection" asChild>
           <Pressable style={styles.iconButton}>
             <Wifi size={22} color="#FFF" />
@@ -84,6 +85,10 @@ export default function Home() {
           <Power size={28} color="#FFF" />
         </Pressable>
       </View>
+
+      <SettingsSheet visible={settingsOpen} onClose={() => setSettingsOpen(false)}>
+        <SettingsSheetContent />
+      </SettingsSheet>
 
       {/* Bottom Right: Mic Toggle */}
       <View style={[styles.bottomRight, { bottom: insets.bottom || space.md }]}>
