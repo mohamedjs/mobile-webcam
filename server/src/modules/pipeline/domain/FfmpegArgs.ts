@@ -37,17 +37,11 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
     args.push('-f', 'mjpeg');
   } else {
     args.push(
-      '-fflags', '+genpts+nobuffer+discardcorrupt',
-      '-avioflags', 'direct',
+      '-fflags', '+genpts+nobuffer',
       '-use_wallclock_as_timestamps', '1',
-    );
-    // A cable carries no jitter worth buffering for. Without these ffmpeg
-    // spends seconds probing and then holds a queue that shows up as lag.
-    args.push(
-      '-flags', 'low_delay',
-      '-probesize', '32768',
-      '-analyzeduration', '0',
-      '-thread_queue_size', '0',
+      '-thread_queue_size', '1',
+      '-probesize', '131072',
+      '-analyzeduration', '100000',
     );
   }
 
@@ -61,7 +55,7 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   // Slice threading: decode slices of ONE frame in parallel across cores.
   // Unlike the default "frame" threading (which holds N frames to reorder),
   // slice threading adds zero latency — and easily handles 1080p30.
-  args.push('-threads', '4', '-thread_type', 'slice');
+  args.push('-threads', '4', '-thread_type', 'slice', '-flags:v', 'low_delay');
 
   // --- video ---
   args.push('-map', '0:v:0');
@@ -74,21 +68,14 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   // actually sends (a rotated frame, a mode the hardware silently substituted,
   // or a stale stream from before a resolution change).
   const filters = [
-    `scale=${settings.resolution.width}:${settings.resolution.height}:flags=fast_bilinear`,
+    `scale=${out.width}:${out.height}:flags=fast_bilinear`,
     `format=${V4L2_PIXEL_FORMAT.ffmpeg}`,
-    // fMP4 fragments arrive in bursts. Without pacing, ffmpeg dumps the whole
-    // burst to v4l2 at once and the consumer drops stale frames. The fps filter
-    // smooths bursts into an evenly-spaced stream by dropping extras and
-    // duplicating the last frame when a burst is late. setpts then assigns
-    // clean, monotonic timestamps so the consumer never sees drift.
-    `fps=fps=${settings.fps}`,
-    `setpts=N/${settings.fps}/TB`,
   ];
   // The format filter is required: V4L2 consumers reject the encoder's native
   // pixel format, and the failure shows as a black frame rather than an error.
   // It must agree with the pinned device caps or the image shears.
   args.push('-vf', filters.join(','));
-  args.push('-flush_packets', '1', '-vsync', 'cfr', '-f', 'v4l2', targets.videoDevice);
+  args.push('-flush_packets', '1', '-fps_mode', 'passthrough', '-f', 'v4l2', targets.videoDevice);
 
   // --- audio ---
   const wantsAudio = profile === 'fmp4' && settings.audio.enabled && targets.audioSink;

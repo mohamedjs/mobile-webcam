@@ -1,0 +1,35 @@
+import AVFoundation
+
+enum EncoderSettings {
+  /// H.264 rather than HEVC: ffmpeg and every browser decode it without a
+  /// hardware-specific path, and the bitrate difference is irrelevant over USB.
+  static func video(width: Int, height: Int, fps: Int, bitrate: Int) -> [String: Any] {
+    [
+      AVVideoCodecKey: AVVideoCodecType.h264,
+      AVVideoWidthKey: width,
+      AVVideoHeightKey: height,
+      AVVideoCompressionPropertiesKey: [
+        AVVideoAverageBitRateKey: bitrate,
+        AVVideoExpectedSourceFrameRateKey: fps,
+        AVVideoMaxKeyFrameIntervalKey: fps,          // 1 s GOP: fast client join
+        AVVideoMaxKeyFrameIntervalDurationKey: 1.0,
+        AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+        AVVideoAllowFrameReorderingKey: false,       // B-frames add latency
+      ],
+    ]
+  }
+
+  static func audio(sampleRate: Int, channels: Int, bitrate: Int) -> [String: Any] {
+    [
+      AVFormatIDKey: kAudioFormatMPEG4AAC,
+      AVSampleRateKey: sampleRate,
+      AVNumberOfChannelsKey: channels,
+      AVEncoderBitRateKey: bitrate,
+    ]
+  }
+
+  /// 100 ms: one fragment ≈ 3 frames at 30fps, keeping burst size small.
+  /// Shorter raises per-segment overhead (negligible over USB); longer
+  /// causes visible stutter as the receiver drops stale frames from each burst.
+  static let segmentDuration = CMTime(value: 100, timescale: 1000)
+}

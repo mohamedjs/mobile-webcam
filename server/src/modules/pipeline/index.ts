@@ -262,6 +262,7 @@ export class PipelineModule {
 
     const delayMs = Math.min(500 * 2 ** (this.#ffmpegRetries - 1), 5000);
     this.#log.info({ attempt: this.#ffmpegRetries, delayMs }, 'restarting ffmpeg');
+    this.#transition('READY');
     await new Promise((r) => setTimeout(r, delayMs));
     await this.start();
   }
@@ -335,7 +336,9 @@ export class PipelineModule {
           ? { bitrate: Math.round(s.bitrate * 0.6) }
           : s.fps > 24
             ? { fps: 24 }
-            : null;
+            : s.resolution.height > 720
+              ? { resolution: { width: 1280, height: 720 } }
+              : null;
 
     if (!next) {
       // Latch. Without this, telemetry re-triggers every few seconds forever and
