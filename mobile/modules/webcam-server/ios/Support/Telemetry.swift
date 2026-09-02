@@ -93,7 +93,7 @@ final class Telemetry {
         "droppedFrames": droppedFrames,
         "droppedSegments": droppedSegments,
         "thermalState": thermalState,
-        "battery": battery,
+        "battery": cachedBattery,
         "clients": clients,
         "audioLevel": Double(audioLevel),
       ]

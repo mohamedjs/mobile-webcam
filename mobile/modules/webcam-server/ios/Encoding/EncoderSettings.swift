@@ -28,6 +28,8 @@ enum EncoderSettings {
     ]
   }
 
-  /// 33 ms: one fragment per frame at 30fps for minimal latency over USB.
-  static let segmentDuration = CMTime(value: 33, timescale: 1000)
+  /// 100 ms: one fragment ≈ 3 frames at 30fps, keeping burst size small.
+  /// Shorter raises per-segment overhead (negligible over USB); longer
+  /// causes visible stutter as the receiver drops stale frames from each burst.
+  static let segmentDuration = CMTime(value: 100, timescale: 1000)
 }

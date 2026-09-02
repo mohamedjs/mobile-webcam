@@ -167,10 +167,11 @@ final class CaptureSessionController: NSObject {
       stabilization.append("cinematic")
     }
 
+    let fallbackRes: [[String: Any]] = [["width": 1920, "height": 1080, "maxFps": 30]]
+    
     return [
       "lenses": lenses.map(\.json),
-      "resolutions": active.map { LensDiscovery.resolutions(for: $0) }
-        ?? [["width": 1920, "height": 1080, "maxFps": 30]],
+      "resolutions": active.map { LensDiscovery.resolutions(for: $0) } ?? fallbackRes,
       "cinematic": cinematic,
       "stabilization": stabilization,
       "hdr": active?.activeFormat.isVideoHDRSupported ?? false,
@@ -246,8 +247,19 @@ final class CaptureSessionController: NSObject {
         connection.automaticallyAdjustsVideoMirroring = false
         connection.isVideoMirrored = settings.mirror
       }
-      if connection.isVideoRotationAngleSupported(CGFloat(settings.rotation)) {
-        connection.videoRotationAngle = CGFloat(settings.rotation)
+      if #available(iOS 17.0, *) {
+        if connection.isVideoRotationAngleSupported(CGFloat(settings.rotation)) {
+          connection.videoRotationAngle = CGFloat(settings.rotation)
+        }
+      } else {
+        if connection.isVideoOrientationSupported {
+          switch settings.rotation {
+          case 90: connection.videoOrientation = .portrait
+          case 180: connection.videoOrientation = .landscapeLeft
+          case 270: connection.videoOrientation = .portraitUpsideDown
+          default: connection.videoOrientation = .landscapeRight
+          }
+        }
       }
       if connection.isVideoStabilizationSupported {
         connection.preferredVideoStabilizationMode =
