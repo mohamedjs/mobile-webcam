@@ -72,6 +72,10 @@ export class PipelineModule {
     return this.#config.forceMjpeg ? 'mjpeg' : 'fmp4';
   }
 
+  /** Last size the phone reported, so a placeholder started before the phone
+   *  is ready does not fall back to 720p and lock the device there. */
+  #lastKnownResolution: { width: number; height: number } | null = null;
+
   #transition(to: PipelineState): void {
     if (this.#state === to) return;
     const from = this.#state;
@@ -115,11 +119,15 @@ export class PipelineModule {
 
   async #startPlaceholder(): Promise<void> {
     if (!(await this.#video.exists())) return;
-    // Match the device's current format. A placeholder at a different size
-    // re-locks v4l2loopback and the real stream then shears.
+    // The placeholder is the FIRST producer to open the node, and with
+    // exclusive_caps=1 whatever it negotiates locks the device for the session.
+    // Pin the size we actually intend to stream before it opens, otherwise a
+    // 720p placeholder silently caps a 1080p stream. docs/06 §2.3.
     const s = this.#control.settings;
+    const wanted = s?.resolution ?? this.#lastKnownResolution ?? { width: 1280, height: 720 };
+    await this.#video.forceFormat(wanted.width, wanted.height, s?.fps ?? 30);
     const actual = await this.#video.actualFormat();
-    const size = actual ?? s?.resolution ?? { width: 1280, height: 720 };
+    const size = actual ?? wanted;
     this.#placeholder.start({
       videoDevice: this.#video.path,
       width: size.width,
@@ -143,13 +151,21 @@ export class PipelineModule {
 
     await this.#placeholder.stop();
     await this.#video.ensure();
+    this.#lastKnownResolution = settings.resolution;
+
     // Must happen BEFORE ffmpeg opens the device. docs/06 §2.3.
-    await this.#video.pinCaps(settings.resolution.width, settings.resolution.height, settings.fps);
+    // forceFormat retries: the placeholder we just killed can still hold the
+    // node briefly, and set-caps against a held node silently does nothing.
+    const pinned = await this.#video.forceFormat(
+      settings.resolution.width,
+      settings.resolution.height,
+      settings.fps,
+    );
     if (settings.audio.enabled) await this.#audio.ensure();
 
     // Scale to what the device REALLY is, not what we asked for. A mismatch
     // does not error — it shears the picture. docs/08 §7.2c.
-    const outputSize = (await this.#video.actualFormat()) ?? settings.resolution;
+    const outputSize = pinned ?? settings.resolution;
     if (outputSize.width !== settings.resolution.width) {
       this.#log.warn(
         { requested: settings.resolution, actual: outputSize },

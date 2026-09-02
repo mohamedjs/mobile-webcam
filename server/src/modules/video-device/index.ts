@@ -120,4 +120,37 @@ export class VideoDeviceModule {
       );
     }
   }
+
+  /**
+   * Pin the format, retrying until the device really reports it.
+   *
+   * A producer that has just been killed can hold the node open for a moment,
+   * and while it does, `set-caps` is a no-op — which is how a 720p placeholder
+   * ends up dictating the size of a 1080p stream for the rest of the session.
+   * Retrying costs a few hundred milliseconds once per stream start.
+   */
+  async forceFormat(
+    width: number,
+    height: number,
+    fps: number,
+    attempts = 6,
+  ): Promise<{ width: number; height: number } | null> {
+    for (let i = 0; i < attempts; i++) {
+      await this.pinCaps(width, height, fps);
+      const actual = await this.actualFormat();
+      if (actual && actual.width === width && actual.height === height) {
+        if (i > 0) this.#log.info({ attempts: i + 1 }, 'format took hold after retry');
+        return actual;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+
+    const actual = await this.actualFormat();
+    this.#log.error(
+      { requested: { width, height }, actual },
+      'device refused the requested size; the stream will be scaled down. ' +
+        'Close anything holding /dev/video* and reload v4l2loopback.',
+    );
+    return actual;
+  }
 }

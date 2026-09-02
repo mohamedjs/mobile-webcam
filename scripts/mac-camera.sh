@@ -47,7 +47,13 @@ EOF
 fi
 say "Phone is streaming"
 
-# -------------------------------------------------------------------- 2. OBS
+# --------------------------------------------------------- 2. match the phone
+# Meet sees OBS's canvas, not the phone's stream. Without this, whatever you
+# picked in the app gets silently downscaled to whatever OBS was last set to.
+say "Matching OBS to the phone's format…"
+python3 "$REPO/scripts/sync-obs-format.py" || true
+
+# -------------------------------------------------------------------- 3. OBS
 # --startvirtualcam publishes the OBS camera extension, which is already
 # installed and approved on this Mac.
 if pgrep -x OBS >/dev/null; then
