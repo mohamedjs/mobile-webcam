@@ -9,11 +9,8 @@ export function ResolutionPicker() {
   const patch = useSettingsStore((s) => s.patch);
   if (!settings || !caps) return null;
 
-  // In Cinematic mode only the cinematic-capable modes are offered.
-  const modes = settings.cinematic.enabled
-    ? caps.resolutions.filter((r) =>
-        caps.cinematic.resolutions.some((c) => c.width === r.width && c.height === r.height))
-    : caps.resolutions;
+  // All resolutions supported by the current lens.
+  const modes = caps.resolutions;
 
   return (
     <View style={styles.row}>

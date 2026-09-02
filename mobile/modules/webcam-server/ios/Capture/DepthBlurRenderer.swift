@@ -11,7 +11,7 @@ final class DepthBlurRenderer {
   private let requestHandler = VNSequenceRequestHandler()
   private var segmentationRequest: VNGeneratePersonSegmentationRequest = {
     let r = VNGeneratePersonSegmentationRequest()
-    r.qualityLevel = .balanced
+    r.qualityLevel = .fast
     r.outputPixelFormat = kCVPixelFormatType_OneComponent8
     return r
   }()
@@ -75,21 +75,36 @@ final class DepthBlurRenderer {
     return render(blend.outputImage, like: image)
   }
 
+  private var pixelBufferPool: CVPixelBufferPool?
+  private var poolWidth: Int = 0
+  private var poolHeight: Int = 0
+
   private func render(_ image: CIImage?, like template: CVPixelBuffer) -> CVPixelBuffer? {
     guard let image else { return nil }
+    
+    let width = CVPixelBufferGetWidth(template)
+    let height = CVPixelBufferGetHeight(template)
+    let format = CVPixelBufferGetPixelFormatType(template)
+
+    if pixelBufferPool == nil || poolWidth != width || poolHeight != height {
+      let poolAttributes: [String: Any] = [
+        kCVPixelBufferPoolMinimumBufferCountKey as String: 3
+      ]
+      let bufferAttributes: [String: Any] = [
+        kCVPixelBufferPixelFormatTypeKey as String: format,
+        kCVPixelBufferWidthKey as String: width,
+        kCVPixelBufferHeightKey as String: height,
+        kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+      ]
+      CVPixelBufferPoolCreate(kCFAllocatorDefault, poolAttributes as CFDictionary, bufferAttributes as CFDictionary, &pixelBufferPool)
+      poolWidth = width
+      poolHeight = height
+    }
+
+    guard let pool = pixelBufferPool else { return nil }
     var output: CVPixelBuffer?
-    let attrs: [String: Any] = [
-      kCVPixelBufferIOSurfacePropertiesKey as String: [:],
-      kCVPixelBufferPixelFormatTypeKey as String:
-        CVPixelBufferGetPixelFormatType(template),
-    ]
-    CVPixelBufferCreate(
-      kCFAllocatorDefault,
-      CVPixelBufferGetWidth(template),
-      CVPixelBufferGetHeight(template),
-      CVPixelBufferGetPixelFormatType(template),
-      attrs as CFDictionary,
-      &output)
+    CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &output)
+    
     guard let output else { return nil }
     ciContext.render(image, to: output)
     return output

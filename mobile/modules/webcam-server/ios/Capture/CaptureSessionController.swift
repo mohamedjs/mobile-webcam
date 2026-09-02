@@ -152,7 +152,7 @@ final class CaptureSessionController: NSObject {
       let tier = CinematicController.tier(for: active)
       let resolutions = CinematicController.supportedResolutions(for: active)
       cinematic = [
-        "supported": tier != .unsupported,
+        "supported": false,
         "tier": tier.rawValue,
         "resolutions": resolutions.isEmpty
           ? [["width": 1920, "height": 1080]] : resolutions,
@@ -221,12 +221,7 @@ final class CaptureSessionController: NSObject {
     session.addInput(input)
     deviceInput = input
 
-    // Cinematic must be set on the INPUT before the format is chosen: it
-    // reconfigures the whole session. docs/05 §F5 tier 1.
-    if settings.cinematic.enabled {
-      let ok = CinematicController.enableNative(on: input, enabled: true)
-      if !ok { Log.warn("native cinematic unavailable; using fallback blur") }
-    }
+    // Native cinematic mode removed due to crashing.
 
     try applyFormatLocked(device: device)
     try applyDeviceSettingsLocked(device: device)
@@ -285,7 +280,6 @@ final class CaptureSessionController: NSObject {
 
     // Tier 2 blur needs depth alongside video, time-aligned.
     if settings.blurFallback.enabled,
-       !settings.cinematic.enabled,
        CinematicController.tier(for: device) == .depth {
       let depth = AVCaptureDepthDataOutput()
       depth.isFilteringEnabled = true

@@ -23,9 +23,8 @@ extension CaptureSessionController: AVCaptureVideoDataOutputSampleBufferDelegate
       return
     }
 
-    // Tier 3 blur: only when neither native Cinematic nor depth is in play.
+    // Tier 3 blur: only when native Cinematic/depth is not in play.
     if settings.blurFallback.enabled,
-       !settings.cinematic.enabled,
        depthOutputIsIdle,
        let pixels = CMSampleBufferGetImageBuffer(sampleBuffer),
        let blurred = blur.renderWithSegmentation(

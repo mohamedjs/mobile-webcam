@@ -14,9 +14,7 @@ export function FpsPicker() {
   const mode = caps.resolutions.find(
     (r) => r.width === settings.resolution.width && r.height === settings.resolution.height,
   );
-  const ceiling = settings.cinematic.enabled
-    ? Math.min(mode?.maxFps ?? 60, caps.cinematic.maxFps)
-    : mode?.maxFps ?? 60;
+  const ceiling = mode?.maxFps ?? 60;
 
   return (
     <View style={styles.row}>

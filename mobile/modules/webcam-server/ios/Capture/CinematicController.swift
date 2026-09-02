@@ -20,7 +20,6 @@ enum CinematicTier: Int {
 
 enum CinematicController {
   static func tier(for device: AVCaptureDevice) -> CinematicTier {
-    if #available(iOS 26.0, *), supportsNative(device) { return .native }
     if device.activeFormat.supportedDepthDataFormats.isEmpty == false { return .depth }
     return .segmentation
   }

@@ -81,7 +81,6 @@ struct Settings: Codable, Equatable {
     lens != other.lens
       || resolution != other.resolution
       || fps != other.fps
-      || cinematic.enabled != other.cinematic.enabled
       || rotation != other.rotation
   }
 }

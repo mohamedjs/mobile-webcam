@@ -5,6 +5,7 @@ import {
   useSettingsStore, ResolutionPicker, FpsPicker, BitratePicker, RestartWarning,
 } from '@/features/settings';
 import { ExposureControls, TorchButton } from '@/features/camera';
+import { CinematicPanel } from '@/features/cinematic';
 
 const ROTATIONS = [0, 90, 180, 270] as const;
 
@@ -22,6 +23,8 @@ export default function VideoSettings() {
         <Row label="Bitrate" hint="applies live" last><BitratePicker /></Row>
         <RestartWarning />
       </Card>
+
+      <CinematicPanel />
 
       <Card title="Image">
         <Row label="Mirror" hint="applies live">
