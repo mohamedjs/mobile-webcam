@@ -18,8 +18,8 @@ export function StreamToggle() {
         title={running ? 'Stop server' : 'Start server'}
         variant={running ? 'danger' : 'primary'}
         loading={busy}
-        disabled={!allGranted || !token}
-        onPress={() => (running ? void stop() : void start(token ?? ''))}
+        disabled={!allGranted}
+        onPress={() => (running ? void stop() : void start(token))}
       />
     </View>
   );

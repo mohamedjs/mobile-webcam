@@ -5,7 +5,7 @@ import { PermissionGate, usePairingToken, usePermissions } from '@/features/conn
 import { useStreamStore } from '@/features/streaming';
 
 export default function Connection() {
-  const { token } = usePairingToken();
+  const { token, enabled } = usePairingToken();
   const { camera, microphone, openSettings, refresh } = usePermissions();
   const running = useStreamStore((s) => s.running);
   const port = useStreamStore((s) => s.port);
@@ -36,7 +36,9 @@ export default function Connection() {
         <Row label="Port"><Text style={styles.mono}>{port}</Text></Row>
         <Row label="Connected clients"><Text style={styles.mono}>{clients.length}</Text></Row>
         <Row label="Pairing code" last>
-          <Text style={styles.code}>{token ?? '——————'}</Text>
+          {enabled
+            ? <Text style={styles.code}>{token}</Text>
+            : <Badge label="not required" tone="neutral" />}
         </Row>
       </Card>
 

@@ -31,13 +31,13 @@ export default function Home() {
     if (running) {
       void stop();
     } else {
-      void start(token ?? '');
+      void start(token);
     }
   };
 
   const isStreaming = running && clients.length > 0;
   // Use clientId as a stand-in for computer name until we parse MDNS/Host headers
-  const clientName = isStreaming ? clients[0].clientId : 'No Computer Connected';
+  const clientName = clients[0]?.clientId ?? 'No Computer Connected';
 
   return (
     <View style={styles.container}>
@@ -79,7 +79,7 @@ export default function Home() {
         <Pressable 
           style={[styles.powerButton, { backgroundColor: running ? 'rgba(245,82,94,0.8)' : 'rgba(30,30,30,0.8)' }]} 
           onPress={toggleServer}
-          disabled={!allGranted || !token || busy}
+          disabled={!allGranted || busy}
         >
           <Power size={28} color="#FFF" />
         </Pressable>

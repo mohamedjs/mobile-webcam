@@ -1,4 +1,4 @@
-import type { PipelineState, SettingsPatch, StreamProfile } from '@mobile-webcam/shared';
+import type { Health, PipelineState, SettingsPatch, StreamProfile } from '@mobile-webcam/shared';
 import type { EventBus } from '../../kernel/events/EventBus.js';
 import type { Logger } from '../../kernel/logging/logger.js';
 import { AppError } from '../../kernel/errors/AppError.js';
@@ -12,6 +12,9 @@ import { FfmpegProcess } from './infrastructure/FfmpegProcess.js';
 import { PlaceholderFeed } from './infrastructure/PlaceholderFeed.js';
 
 export { buildFfmpegArgs, buildPlaceholderArgs } from './domain/FfmpegArgs.js';
+
+/** Consecutive ffmpeg failures before the pipeline stops retrying. */
+const MAX_FFMPEG_RETRIES = 5;
 
 /**
  * Owns the state machine and the ffmpeg process. Nothing else may spawn ffmpeg —
@@ -31,6 +34,8 @@ export class PipelineModule {
   #state: PipelineState = 'NO_DEVICE';
   #degraded = false;
   #restarting = false;
+  #ffmpegRetries = 0;
+  #resumeTimer: NodeJS.Timeout | null = null;
 
   constructor(deps: {
     log: Logger;
@@ -106,11 +111,15 @@ export class PipelineModule {
 
   async #startPlaceholder(): Promise<void> {
     if (!(await this.#video.exists())) return;
+    // Match the device's current format. A placeholder at a different size
+    // re-locks v4l2loopback and the real stream then shears.
     const s = this.#control.settings;
+    const actual = await this.#video.actualFormat();
+    const size = actual ?? s?.resolution ?? { width: 1280, height: 720 };
     this.#placeholder.start({
       videoDevice: this.#video.path,
-      width: s?.resolution.width ?? 1280,
-      height: s?.resolution.height ?? 720,
+      width: size.width,
+      height: size.height,
       fps: 15,
     });
   }
@@ -134,11 +143,22 @@ export class PipelineModule {
     await this.#video.pinCaps(settings.resolution.width, settings.resolution.height, settings.fps);
     if (settings.audio.enabled) await this.#audio.ensure();
 
+    // Scale to what the device REALLY is, not what we asked for. A mismatch
+    // does not error — it shears the picture. docs/08 §7.2c.
+    const outputSize = (await this.#video.actualFormat()) ?? settings.resolution;
+    if (outputSize.width !== settings.resolution.width) {
+      this.#log.warn(
+        { requested: settings.resolution, actual: outputSize },
+        'device format differs from the requested resolution; scaling to the device',
+      );
+    }
+
     const args = buildFfmpegArgs({
       profile: this.profile,
       baseUrl: this.#tunnel.baseUrl,
       token: this.#config.token,
       settings,
+      outputSize,
       targets: {
         videoDevice: this.#video.path,
         ...(settings.audio.enabled ? { audioSink: this.#audio.sinkName } : {}),
@@ -148,6 +168,8 @@ export class PipelineModule {
     this.#log.info({ profile: this.profile }, 'starting ffmpeg');
     this.#ffmpeg.start(args, (reason) => void this.#onFfmpegExit(reason));
     this.#transition('STREAMING');
+    // Clear the failure streak once a start has been attempted cleanly.
+    setTimeout(() => { if (this.#state === 'STREAMING') this.#ffmpegRetries = 0; }, 10_000);
   }
 
   async stop(): Promise<void> {
@@ -167,17 +189,58 @@ export class PipelineModule {
 
     if (this.#state !== 'STREAMING') return;
 
-    // Is the phone still there? If yes this was a transient stream end.
+    // Ask the phone what is actually wrong before blindly retrying.
+    let health: Health;
     try {
-      await this.#control.client.health();
-      this.#log.info('phone still healthy; restarting ffmpeg');
-      await new Promise((r) => setTimeout(r, 500));
-      await this.start();
+      health = await this.#control.client.health();
     } catch {
       this.#log.warn('phone unreachable after ffmpeg exit');
       this.#transition('READY');
       await this.#startPlaceholder();
+      return;
     }
+
+    // The phone is alive but not capturing: retrying cannot help, and looping
+    // on it hammers the device and hides the real cause. Say so and stop.
+    if (!health.streaming) {
+      this.#log.error(
+        'phone is reachable but its camera is not running — tap Start server in the app',
+      );
+      this.#bus.emit({
+        type: 'pipeline.error',
+        code: 'capture_failed',
+        message:
+          'The phone is connected but not capturing. Open mobile_webcam on the phone '
+          + 'and tap Start server.',
+        fatal: false,
+      });
+      this.#ffmpegRetries = 0;
+      this.#transition('READY');
+      await this.#startPlaceholder();
+      this.#watchForCaptureResume();
+      return;
+    }
+
+    // Bounded retries with backoff. An unbounded 500 ms loop spins forever.
+    this.#ffmpegRetries += 1;
+    if (this.#ffmpegRetries > MAX_FFMPEG_RETRIES) {
+      this.#log.error({ retries: this.#ffmpegRetries }, 'giving up restarting ffmpeg');
+      this.#bus.emit({
+        type: 'pipeline.error',
+        code: 'ffmpeg_failed',
+        message: `ffmpeg failed ${this.#ffmpegRetries} times in a row: ${reason}`,
+        fatal: false,
+      });
+      this.#ffmpegRetries = 0;
+      this.#transition('READY');
+      await this.#startPlaceholder();
+      return;
+    }
+
+    const delayMs = Math.min(500 * 2 ** (this.#ffmpegRetries - 1), 5000);
+    this.#log.info({ attempt: this.#ffmpegRetries, delayMs }, 'restarting ffmpeg');
+    await new Promise((r) => setTimeout(r, delayMs));
+    await this.start();
   }
 
   /**
@@ -202,6 +265,38 @@ export class PipelineModule {
       this.#log.error({ err: e }, 'reconfiguration failed');
       this.#transition('READY');
       throw e;
+    }
+  }
+
+  /**
+   * Poll until the phone starts capturing again, then resume by itself.
+   *
+   * Without this the desktop sits in READY showing the placeholder even after
+   * the user taps Start server on the phone.
+   */
+  #watchForCaptureResume(): void {
+    if (this.#resumeTimer) return;
+    this.#resumeTimer = setInterval(() => {
+      void (async () => {
+        if (this.#state !== 'READY') { this.#clearResumeWatch(); return; }
+        try {
+          const health = await this.#control.client.health();
+          if (!health.streaming) return;
+          this.#log.info('phone is capturing again; resuming');
+          this.#clearResumeWatch();
+          await this.#control.refresh();
+          await this.start();
+        } catch {
+          // Phone unreachable; device.disconnected will handle it.
+        }
+      })();
+    }, 3000);
+  }
+
+  #clearResumeWatch(): void {
+    if (this.#resumeTimer) {
+      clearInterval(this.#resumeTimer);
+      this.#resumeTimer = null;
     }
   }
 
@@ -236,6 +331,7 @@ export class PipelineModule {
   }
 
   async shutdown(): Promise<void> {
+    this.#clearResumeWatch();
     await this.#ffmpeg.stop();
     await this.#placeholder.stop();
   }

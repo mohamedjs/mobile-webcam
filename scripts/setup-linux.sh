@@ -78,7 +78,8 @@ if [ -e "$VIDEO_DEV" ]; then
 fi
 
 # 5 — audio sink --------------------------------------------------------------
-if pactl list short sinks 2>/dev/null | grep -q "$SINK"; then
+SINKS="$(pactl list short sinks 2>/dev/null || true)"
+if grep -q "$SINK" <<<"$SINKS"; then
   say "PipeWire sink \"$SINK\" already loaded"
 else
   say "Creating PipeWire sink \"$SINK\""
@@ -90,7 +91,8 @@ else
 fi
 
 # 6 — video group -------------------------------------------------------------
-if id -nG "$USER" | tr ' ' '\n' | grep -qx video; then
+GROUPS_LIST="$(id -nG "$USER")"
+if grep -qx video <<<"${GROUPS_LIST// /$'\n'}"; then
   say "$USER is in the video group"
 else
   say "Adding $USER to the video group"
@@ -101,8 +103,9 @@ else
 fi
 
 # 7 — device ------------------------------------------------------------------
-if idevice_id -l 2>/dev/null | grep -q .; then
-  say "iPhone paired: $(idevice_id -l | head -1)"
+DEVICES="$(idevice_id -l 2>/dev/null || true)"
+if [ -n "$DEVICES" ]; then
+  say "iPhone paired: $(head -1 <<<"$DEVICES")"
 else
   warn "No paired iPhone. Plug in the cable, unlock the phone, tap Trust."
 fi

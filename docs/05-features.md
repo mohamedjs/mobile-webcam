@@ -43,8 +43,13 @@ fMP4 (H.264 + AAC) from phone to `/dev/videoN`.
 - `AVCaptureSession` → `AVAssetWriter` (`.mpeg4AppleHLS`) → delegate hands back
   segments → written as HTTP chunks.
 - Target segment duration **200 ms**. Shorter raises overhead; longer raises latency.
-- Exactly one streaming client at a time. A second `GET /stream.mp4` gets `409`
-  with `{"error":"already_streaming"}`.
+- One streaming client at a time, and **the newest client wins**. A second
+  `GET /stream.mp4` displaces the first rather than being refused.
+  Refusing with `409` is the intuitive policy and is wrong here: if the
+  desktop's ffmpeg dies abruptly its entry can outlive it, and every reconnect
+  is then refused permanently. The symptom is near-undiagnosable — the virtual
+  camera is never written, which renders as a **solid green frame at 0 fps**,
+  with only a `409` anywhere in the logs. Reconnecting is the normal case.
 - **Back-pressure:** if `NWConnection`'s send completion has not fired for the
   previous segment, drop the new one and increment `droppedSegments`. Never queue
   unboundedly — that is an OOM crash on a phone.

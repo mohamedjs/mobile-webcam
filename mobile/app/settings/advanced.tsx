@@ -8,34 +8,46 @@ import { useStreamStore } from '@/features/streaming';
 import { log } from '@/shared/lib/logger';
 
 export default function AdvancedSettings() {
-  const { token, regenerate } = usePairingToken();
+  const { token, enabled, enable, disable } = usePairingToken();
   const running = useStreamStore((s) => s.running);
   const port = useStreamStore((s) => s.port);
   const stop = useStreamStore((s) => s.stop);
   const [busy, setBusy] = useState(false);
 
-  const onRegenerate = () => {
-    Alert.alert(
-      'Regenerate pairing code?',
-      'The desktop service will need the new code before it can connect again.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Regenerate',
-          style: 'destructive',
-          onPress: () => {
-            setBusy(true);
-            void (async () => {
-              if (running) await stop();
-              const t = await regenerate();
-              log.info('pairing code regenerated');
-              setBusy(false);
-              Alert.alert('New pairing code', t);
-            })();
+  const onToggleAuth = () => {
+    if (enabled) {
+      Alert.alert(
+        'Turn off the pairing code?',
+        'Any program on the connected computer will be able to read the camera '
+          + 'while the server is running.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Turn off',
+            style: 'destructive',
+            onPress: () => {
+              setBusy(true);
+              void (async () => {
+                if (running) await stop();
+                await disable();
+                log.info('pairing code disabled');
+                setBusy(false);
+              })();
+            },
           },
-        },
-      ],
-    );
+        ],
+      );
+      return;
+    }
+
+    setBusy(true);
+    void (async () => {
+      if (running) await stop();
+      const t = await enable();
+      log.info('pairing code enabled');
+      setBusy(false);
+      Alert.alert('Pairing code enabled', `Enter ${t} on the desktop service.`);
+    })();
   };
 
   return (
@@ -49,14 +61,23 @@ export default function AdvancedSettings() {
       </Card>
 
       <Card title="Pairing">
-        <Row label="Pairing code" last>
-          <Text style={styles.code}>{token ?? '——————'}</Text>
+        <Row label="Require a pairing code" last>
+          <Badge label={enabled ? 'on' : 'off'} tone={enabled ? 'ok' : 'neutral'} />
         </Row>
         <Text style={styles.note}>
-          Enter this on the desktop service. Over a cable this is a convenience, not a
-          secret — but it stops another process on your computer reading the camera.
+          {enabled
+            ? 'The desktop service must send this code. Enter it there once.'
+            : 'Off. The desktop connects with no code — nothing to type. Over a '
+              + 'cable the server is only reachable from the computer holding it, '
+              + 'so this only matters if you do not trust other programs on that machine.'}
         </Text>
-        <Button title="Regenerate" variant="ghost" loading={busy} onPress={onRegenerate} />
+        {enabled ? <Text style={styles.code}>{token}</Text> : null}
+        <Button
+          title={enabled ? 'Turn off pairing code' : 'Require a pairing code'}
+          variant="ghost"
+          loading={busy}
+          onPress={onToggleAuth}
+        />
       </Card>
 
       <Card title="Diagnostics">

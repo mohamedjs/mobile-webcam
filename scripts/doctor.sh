@@ -3,6 +3,12 @@
 # See docs/06-linux-integration.md §7.
 set -uo pipefail
 
+# NOTE: this script runs with `pipefail`. Never write `cmd | grep -q ...` —
+# grep exits on the first match, the producer takes SIGPIPE (rc 141), and
+# pipefail turns a SUCCESSFUL match into a failed test. Piping a variable with
+# printf has the same bug. Use a here-string (`grep -q PATTERN <<<"$VAR"`) or a
+# `case` statement: neither has a producer process to kill. This produced two
+# false FAILs before it was caught.
 VIDEO_NR="${MW_VIDEO_NR:-9}"
 VIDEO_DEV="/dev/video${VIDEO_NR}"
 VIDEO_LABEL="${MW_VIDEO_LABEL:-Mobile Webcam}"
@@ -36,7 +42,8 @@ done
 # usbmuxd is socket/udev-activated: it is legitimately inactive with no phone
 # attached. Only a phone that IS plugged in but unreachable is a real failure.
 IPHONE_ON_USB=0
-lsusb 2>/dev/null | grep -qi 'Apple' && IPHONE_ON_USB=1
+LSUSB="$(lsusb 2>/dev/null || true)"
+case "$LSUSB" in *[Aa]pple*) IPHONE_ON_USB=1 ;; esac
 
 if pgrep -x usbmuxd >/dev/null || systemctl is-active --quiet usbmuxd 2>/dev/null; then
   ok "usbmuxd running"
@@ -58,7 +65,8 @@ else
 fi
 
 # --- v4l2loopback ------------------------------------------------------------
-if lsmod | grep -q '^v4l2loopback'; then
+LSMOD="$(lsmod)"
+if grep -q '^v4l2loopback' <<<"$LSMOD"; then
   ok "v4l2loopback loaded"
   if [ -e "$VIDEO_DEV" ]; then
     ACTUAL="$(cat "/sys/devices/virtual/video4linux/video${VIDEO_NR}/name" 2>/dev/null || echo '?')"
@@ -78,32 +86,72 @@ else
 fi
 
 # --- audio -------------------------------------------------------------------
-if command -v pactl >/dev/null && pactl list short sinks 2>/dev/null | grep -q "$SINK"; then
+SINKS="$(pactl list short sinks 2>/dev/null || true)"
+SOURCES="$(pactl list short sources 2>/dev/null || true)"
+case "$SINKS" in
+  *"$SINK"*)
   ok "PipeWire sink \"$SINK\" present"
-  pactl list short sources 2>/dev/null | grep -q "${SINK}.monitor" \
-    && ok "monitor source \"${SINK}.monitor\" present" \
-    || bad "monitor source missing" "pactl unload-module module-null-sink; then npm run setup:linux"
-else
+  case "$SOURCES" in
+    *"${SINK}.monitor"*) ok "monitor source \"${SINK}.monitor\" present" ;;
+    *) bad "monitor source missing" "pactl unload-module module-null-sink; then npm run setup:linux" ;;
+  esac
+  ;;
+  *)
   bad "PipeWire sink \"$SINK\" missing" \
       "pactl load-module module-null-sink sink_name=$SINK sink_properties=device.description=Mobile_Webcam_Mic"
-fi
+  ;;
+esac
 
 # --- phone app ---------------------------------------------------------------
-if command -v iproxy >/dev/null && [ -n "$UDID" ]; then
-  pkill -f "iproxy .* ${DEVICE_PORT}\$" 2>/dev/null || true
-  iproxy 1"$DEVICE_PORT" "$DEVICE_PORT" >/dev/null 2>&1 &
-  TUNNEL=$!
-  sleep 1
-  CODE="$(curl -s -m 3 -o /dev/null -w '%{http_code}' "http://127.0.0.1:1${DEVICE_PORT}/health" 2>/dev/null)"
-  kill "$TUNNEL" 2>/dev/null; wait "$TUNNEL" 2>/dev/null
+# If the service is already running its own tunnel, reuse it. Spawning a second
+# iproxy on the same local port fails to bind and reports a false "app not
+# responding" — the service's tunnel is the authority when it exists.
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/mobile_webcam/config.json"
+LOCAL_PORT=""
+if [ -r "$CONFIG" ]; then
+  LOCAL_PORT="$(sed -n 's/.*"localPort"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$CONFIG" | head -1)"
+fi
+[ -n "$LOCAL_PORT" ] || LOCAL_PORT=""
+
+probe_port=""
+LISTENING="$(ss -ltn 2>/dev/null || true)"
+if [ -n "$LOCAL_PORT" ] && grep -q ":${LOCAL_PORT}[[:space:]]" <<<"$LISTENING"; then
+  probe_port="$LOCAL_PORT"
+  info "Reusing the running service's tunnel on port $probe_port"
+  OWN_TUNNEL=0
+elif command -v iproxy >/dev/null && [ -n "$UDID" ]; then
+  # Find a free local port rather than hardcoding one that may be in use.
+  for candidate in 29080 29081 29082 29083 29084; do
+    if ! grep -q ":${candidate}[[:space:]]" <<<"$LISTENING"; then
+      probe_port="$candidate"; break
+    fi
+  done
+  if [ -n "$probe_port" ]; then
+    iproxy "$probe_port" "$DEVICE_PORT" >/dev/null 2>&1 &
+    TUNNEL=$!
+    OWN_TUNNEL=1
+    sleep 1
+    if ! kill -0 "$TUNNEL" 2>/dev/null; then
+      bad "iproxy could not bind port $probe_port" "Check nothing else holds it: ss -ltnp | grep $probe_port"
+      probe_port=""
+    fi
+  fi
+fi
+
+if [ -n "$probe_port" ]; then
+  CODE="$(curl -s -m 5 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${probe_port}/health" 2>/dev/null || echo 000)"
+  [ "${OWN_TUNNEL:-0}" = "1" ] && { kill "$TUNNEL" 2>/dev/null || true; wait "$TUNNEL" 2>/dev/null || true; }
   case "$CODE" in
     200) ok "Phone app responding on device port $DEVICE_PORT" ;;
+    401) ok "Phone app responding (401 = pairing code not set on the desktop)" ;;
     000) bad "Phone app not responding on device port $DEVICE_PORT" \
-             "Open mobile_webcam on the phone. If it is already open: Settings → Privacy & Security → Local Network → mobile_webcam" ;;
+             "Open mobile_webcam on the phone and tap Start server. If it is already open: Settings -> Privacy & Security -> Local Network -> mobile_webcam" ;;
     *)   bad "Phone app returned HTTP $CODE on /health" "Check the app logs on the phone" ;;
   esac
+elif [ -z "$UDID" ]; then
+  info "Skipping phone probe (no device connected)"
 else
-  echo "[SKIP] Phone app probe (needs iproxy and a paired device)"
+  info "Skipping phone probe (no free local port, or iproxy missing)"
 fi
 
 echo "===================="

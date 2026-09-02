@@ -344,6 +344,24 @@ curl -sS -m 5 http://127.0.0.1:18080/health
 peer` on the app's port, when the port is definitely open, means a crash in the
 handler — check the device console (§8 of docs/09).
 
+### 7.2c Solid green picture, 0 fps
+
+Green is what an **empty** v4l2loopback device looks like: all-zero bytes are
+luma 0 with chroma 0 instead of 128. It means nothing is writing to the device
+at all — not a colour or format problem.
+
+Check, in order:
+
+```bash
+pgrep -af ffmpeg                 # is anything writing?
+curl -sS -m 5 http://127.0.0.1:18080/health          # is the phone alive?
+curl -sS -m 5 -o /dev/null -w '%{http_code}\n' \
+  http://127.0.0.1:18080/stream.mp4                  # 409 = phantom client
+```
+
+A `409` means a previous streaming client is still registered on the phone.
+Current builds displace it automatically; on older builds, restart the phone app.
+
 ### 7.3 No device found at all
 
 ```bash

@@ -11,11 +11,6 @@ const config: ExpoConfig = {
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  splash: {
-    image: './assets/images/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#000000',
-  },
   scheme: 'mobilewebcam',
   userInterfaceStyle: 'dark',
   // New Architecture is the default in SDK 56 — no legacy bridge fallback exists.
