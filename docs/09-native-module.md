@@ -339,6 +339,29 @@ Missing from the list means silently no-op.
 
 ---
 
+## 7b. Native changes pending a Mac build
+
+This repo is edited on Linux but the iOS app is built on a Mac. Anything in
+`modules/webcam-server/ios/` only takes effect after a rebuild there, so
+server-side work can run far ahead of what is actually on the device. Everything
+below is in the source and NOT yet on a phone built before 2026-09-02:
+
+| Area | Change | Fixes |
+|---|---|---|
+| `HTTPServer` | `start()` waits for the listener to be genuinely READY | App claimed "waiting for computer" while the socket had silently failed to bind |
+| `HTTPServer` | A new stream client displaces the old one | 409 `already_streaming` refusing every reconnect forever |
+| `StreamConnection` | Observes `NWConnection` state | Dead clients were only reaped when a write failed |
+| `StreamConnection` | Treats a >10 s in-flight write as dead | `inFlight` latched true → no write ever attempted → client never reaped |
+| `CaptureSessionController` | Observes interruption / interruption-ended / runtime-error | iOS stopped the camera and it stayed stopped forever |
+| `CaptureSessionController` | `isRunning` returns `running && session.isRunning` | `/health` reported "capturing" with a dead camera |
+| `CaptureSessionController` | Cross-file members made internal | **Compile error**: `private` never crosses a file, even for extensions |
+| `Telemetry`, `Routes` | UIKit reads cached on the main thread | Hard crash on every `/health` request |
+| `WebcamServerModule` | Screen-awake follows the SERVER, not capture | Phone locked → iOS suspended the app → socket died |
+| `DepthBlurRenderer` | `import Metal` | **Compile error**: `MTLCreateSystemDefaultDevice` is not in CoreImage |
+
+Two of these are hard compile errors, so a build from a source tree older than
+this table will fail rather than merely misbehave.
+
 ## 8. Debugging
 
 | Symptom | Cause |

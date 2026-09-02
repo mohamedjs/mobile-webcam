@@ -36,6 +36,7 @@ export class PipelineModule {
   #restarting = false;
   #ffmpegRetries = 0;
   #resumeTimer: NodeJS.Timeout | null = null;
+  #atQualityFloor = false;
 
   constructor(deps: {
     log: Logger;
@@ -200,6 +201,28 @@ export class PipelineModule {
       return;
     }
 
+    // A stale streaming client on the phone refuses every reconnect. Retrying
+    // cannot clear it, so name the remedy instead of burning through attempts.
+    if (/409|Conflict|already streaming|already_streaming/i.test(reason)) {
+      this.#log.error(
+        'the phone still has a stale streaming client registered; '
+        + 'tap Stop server then Start server in the app to clear it',
+      );
+      this.#bus.emit({
+        type: 'pipeline.error',
+        code: 'already_streaming',
+        message:
+          'The phone is refusing new connections because an old streaming client is '
+          + 'still registered. On the phone, tap Stop server then Start server.',
+        fatal: false,
+      });
+      this.#ffmpegRetries = 0;
+      this.#transition('READY');
+      await this.#startPlaceholder();
+      this.#watchForCaptureResume();
+      return;
+    }
+
     // The phone is alive but not capturing: retrying cannot help, and looping
     // on it hammers the device and hides the real cause. Say so and stop.
     if (!health.streaming) {
@@ -315,7 +338,20 @@ export class PipelineModule {
             : null;
 
     if (!next) {
-      this.#log.warn({ reason }, 'already at the lowest quality step');
+      // Latch. Without this, telemetry re-triggers every few seconds forever and
+      // floods the log with a warning nothing can act on.
+      if (!this.#atQualityFloor) {
+        this.#atQualityFloor = true;
+        this.#log.warn(
+          { reason, settings: { fps: s.fps, bitrate: s.bitrate, resolution: s.resolution } },
+          'already at the lowest quality step; no further reduction possible',
+        );
+        this.#bus.emit({
+          type: 'telemetry.degraded',
+          reason,
+          action: 'at minimum quality — the phone is still overheating',
+        });
+      }
       return;
     }
 
@@ -328,6 +364,7 @@ export class PipelineModule {
 
   clearDegraded(): void {
     this.#degraded = false;
+    this.#atQualityFloor = false;
   }
 
   async shutdown(): Promise<void> {

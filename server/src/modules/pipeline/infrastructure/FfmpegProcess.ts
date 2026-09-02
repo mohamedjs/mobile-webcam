@@ -15,6 +15,8 @@ export class FfmpegProcess {
   readonly #log: Logger;
   #proc: ManagedProcess | null = null;
   #stats: FfmpegStats = { fps: 0, bitrateKbits: 0, droppedFrames: 0 };
+  /** ffmpeg's own last words — the actual cause, e.g. "HTTP error 409". */
+  #lastStderr: string[] = [];
 
   constructor(deps: { log: Logger }) {
     this.#log = deps.log.child({ component: 'ffmpeg' });
@@ -36,6 +38,7 @@ export class FfmpegProcess {
   start(args: string[], onExit: (reason: string) => void): void {
     if (this.#proc) return;
     this.#stats = { fps: 0, bitrateKbits: 0, droppedFrames: 0 };
+    this.#lastStderr = [];
 
     this.#proc = new ManagedProcess({
       name: 'ffmpeg',
@@ -43,10 +46,18 @@ export class FfmpegProcess {
       args,
       log: this.#log,
       restart: { maxFailures: 0 },
-      onStderrLine: (line) => this.#parseStats(line),
+      onStderrLine: (line) => {
+        this.#parseStats(line);
+        this.#lastStderr.push(line);
+        if (this.#lastStderr.length > 8) this.#lastStderr.shift();
+      },
       onGaveUp: (reason) => {
         this.#proc = null;
-        onExit(reason);
+        // Pass ffmpeg's stderr through. The restart-policy text ("1 failures
+        // within 60000ms") says nothing about WHY, and callers need to branch on
+        // the real cause — a 409 cannot be fixed by retrying.
+        const detail = this.#lastStderr.join(' | ');
+        onExit(detail ? `${reason} :: ${detail}` : reason);
       },
     });
     this.#proc.start();
