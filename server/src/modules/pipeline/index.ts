@@ -10,6 +10,7 @@ import type { AudioDeviceModule } from '../audio-device/index.js';
 import { buildFfmpegArgs } from './domain/FfmpegArgs.js';
 import { FfmpegProcess } from './infrastructure/FfmpegProcess.js';
 import { PlaceholderFeed } from './infrastructure/PlaceholderFeed.js';
+import { StreamProxy } from './infrastructure/StreamProxy.js';
 
 export { buildFfmpegArgs, buildPlaceholderArgs } from './domain/FfmpegArgs.js';
 
@@ -30,6 +31,7 @@ export class PipelineModule {
   readonly #audio: AudioDeviceModule;
   readonly #ffmpeg: FfmpegProcess;
   readonly #placeholder: PlaceholderFeed;
+  readonly #streamProxy: StreamProxy;
 
   #state: PipelineState = 'NO_DEVICE';
   #degraded = false;
@@ -56,6 +58,7 @@ export class PipelineModule {
     this.#audio = deps.audio;
     this.#ffmpeg = new FfmpegProcess({ log: this.#log });
     this.#placeholder = new PlaceholderFeed({ log: this.#log });
+    this.#streamProxy = new StreamProxy({ log: this.#log });
 
     this.#bus.on('device.connected', () => void this.#onDeviceConnected());
     this.#bus.on('device.disconnected', () => void this.#onDeviceDisconnected());
@@ -154,10 +157,16 @@ export class PipelineModule {
       );
     }
 
+    let baseUrl = this.#tunnel.baseUrl;
+    if (this.profile === 'fmp4') {
+      const proxyPort = await this.#streamProxy.start(this.#config.localPort, this.#config.token);
+      baseUrl = `http://127.0.0.1:${proxyPort}`;
+    }
+
     const args = buildFfmpegArgs({
       profile: this.profile,
-      baseUrl: this.#tunnel.baseUrl,
-      token: this.#config.token,
+      baseUrl,
+      token: this.profile === 'fmp4' ? '' : this.#config.token,
       settings,
       outputSize,
       targets: {
@@ -175,6 +184,7 @@ export class PipelineModule {
 
   async stop(): Promise<void> {
     await this.#ffmpeg.stop();
+    await this.#streamProxy.stop();
     if (this.#state === 'STREAMING') {
       this.#transition(this.#control.settings ? 'READY' : 'NO_DEVICE');
     }
@@ -185,6 +195,7 @@ export class PipelineModule {
    * -reconnect is deliberately not used. docs/04 §5.1.
    */
   async #onFfmpegExit(reason: string): Promise<void> {
+    await this.#streamProxy.stop();
     if (this.#restarting) return;
     this.#log.warn({ reason }, 'ffmpeg exited');
 

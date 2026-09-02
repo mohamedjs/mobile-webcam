@@ -78,9 +78,11 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   args.push('-flush_packets', '1', '-fps_mode', 'passthrough', '-f', 'v4l2', targets.videoDevice);
 
   // --- audio ---
-  const wantsAudio = profile === 'fmp4' && settings.audio.enabled && targets.audioSink;
+  // The phone stream currently contains video-only. Disable audio sink output
+  // to avoid FFmpeg error "Output file does not contain any stream".
+  const wantsAudio = false;
   if (wantsAudio) {
-    args.push('-map', '0:a:0', '-f', 'pulse', '-device', targets.audioSink!, 'mobile_webcam');
+    args.push('-map', '0:a:0?', '-f', 'pulse', '-device', targets.audioSink!, 'mobile_webcam');
   }
 
   return args;

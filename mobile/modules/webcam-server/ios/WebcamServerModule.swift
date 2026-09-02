@@ -243,6 +243,10 @@ extension WebcamServerModule: HTTPServerDelegate {
   ) -> Bool {
     guard capture.isRunning else { return false }
 
+    connection.sendHeader(contentType: profile == "mjpeg"
+      ? "multipart/x-mixed-replace; boundary=\(MJPEGEncoder.boundary)"
+      : "video/mp4")
+
     // A client that misses the initialisation segment can never decode what
     // follows, so replay it immediately on connect.
     if profile == "fmp4", let initSegment = capture.initializationSegment {
