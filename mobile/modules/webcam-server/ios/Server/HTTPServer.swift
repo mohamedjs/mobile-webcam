@@ -193,10 +193,6 @@ final class HTTPServer {
       stateQueue.sync { streams[id] = stream }
       Telemetry.shared.setClients(clientCount)
       delegate.serverDidChangeClients(self, count: clientCount)
-
-      stream.sendHeader(contentType: profile == "mjpeg"
-        ? "multipart/x-mixed-replace; boundary=\(MJPEGEncoder.boundary)"
-        : "video/mp4")
       return
     }
 
