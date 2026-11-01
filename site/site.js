@@ -286,7 +286,8 @@ const ASSET_PATTERNS = {
   winSetup: /^webcamo.*setup.*\.exe$/i,
   winZip: /^webcamo.*windows.*\.zip$/i,
   macDmg: /^webcamo.*\.dmg$/i,
-  macZip: /^webcamo.*macos.*\.zip$/i,
+  macArmZip: /^webcamo.*macos.*arm64\.zip$/i,
+  macIntelZip: /^webcamo.*macos.*(x86_64|x64)\.zip$/i,
   linuxDeb: /^webcamo.*\.deb$/i,
   linuxTar: /^webcamo.*linux.*\.tar\.gz$/i,
   androidApk: /^webcamo.*\.apk$/i,
@@ -304,6 +305,7 @@ async function fetchLatestRelease() {
   }
 
   const version = releaseData?.tag_name || FALLBACK_VERSION;
+  const cleanVer = version.replace(/^v/, "");
   const assets = releaseData?.assets || [];
 
   function findUrl(pattern, fallback) {
@@ -313,13 +315,33 @@ async function fetchLatestRelease() {
 
   const baseReleaseUrl = `https://github.com/${REPO}/releases/download/${version}`;
 
+  const winZipUrl = findUrl(
+    ASSET_PATTERNS.winZip,
+    `${baseReleaseUrl}/webcamo-windows-x64-${cleanVer}.zip`,
+  );
+  const macArmZipUrl = findUrl(
+    ASSET_PATTERNS.macArmZip,
+    `${baseReleaseUrl}/Webcamo-${cleanVer}-macos-arm64.zip`,
+  );
+  const macIntelZipUrl = findUrl(
+    ASSET_PATTERNS.macIntelZip,
+    `${baseReleaseUrl}/Webcamo-${cleanVer}-macos-x86_64.zip`,
+  );
+
   const urls = {
-    winSetup: findUrl(ASSET_PATTERNS.winSetup, `${baseReleaseUrl}/webcamo-setup-${version}.exe`),
-    winZip: findUrl(ASSET_PATTERNS.winZip, `${baseReleaseUrl}/webcamo-windows-x64-${version}.zip`),
-    macDmg: findUrl(ASSET_PATTERNS.macDmg, `${baseReleaseUrl}/webcamo-${version}.dmg`),
-    linuxDeb: findUrl(ASSET_PATTERNS.linuxDeb, `${baseReleaseUrl}/webcamo_${version}_amd64.deb`),
-    linuxTar: findUrl(ASSET_PATTERNS.linuxTar, `${baseReleaseUrl}/webcamo-linux-x64-${version}.tar.gz`),
-    androidApk: findUrl(ASSET_PATTERNS.androidApk, `${baseReleaseUrl}/webcamo-${version}.apk`),
+    winSetup: findUrl(ASSET_PATTERNS.winSetup, winZipUrl),
+    winZip: winZipUrl,
+    macDmg: findUrl(ASSET_PATTERNS.macDmg, macArmZipUrl),
+    macIntel: macIntelZipUrl,
+    linuxDeb: findUrl(ASSET_PATTERNS.linuxDeb, `${baseReleaseUrl}/webcamo_${cleanVer}_amd64.deb`),
+    linuxTar: findUrl(
+      ASSET_PATTERNS.linuxTar,
+      `${baseReleaseUrl}/webcamo-linux-x86_64-${cleanVer}.tar.gz`,
+    ),
+    androidApk: findUrl(
+      ASSET_PATTERNS.androidApk,
+      `https://github.com/${REPO}/releases/tag/${version}`,
+    ),
   };
 
   // Wire download links
@@ -331,6 +353,7 @@ async function fetchLatestRelease() {
   setLink("dl-win-setup", urls.winSetup);
   setLink("dl-win-portable", urls.winZip);
   setLink("dl-mac-dmg", urls.macDmg);
+  setLink("dl-mac-intel", urls.macIntel);
   setLink("dl-linux-deb", urls.linuxDeb);
   setLink("dl-linux-tar", urls.linuxTar);
   setLink("dl-android-apk", urls.androidApk);

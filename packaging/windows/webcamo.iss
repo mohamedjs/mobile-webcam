@@ -17,7 +17,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\..\dist
-OutputBaseFilename=Webcamo-Setup-{#AppVersion}
+OutputBaseFilename=webcamo-setup-v{#AppVersion}
 SetupIconFile=..\icons\webcamo.ico
 Compression=lzma2/max
 SolidCompression=yes
@@ -27,27 +27,23 @@ ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "arabic"; MessagesFile: "compiler:Languages\Arabic.isl"
 
 [Tasks]
 Name: "autostart"; Description: "Start Webcamo when I sign in"; GroupDescription: "Startup:"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\..\dist\webcamo\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\windows-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Webcamo"; Filename: "{app}\webcamo.exe"; Parameters: "dashboard"
-Name: "{group}\Webcamo Diagnostics"; Filename: "{app}\webcamo.exe"; Parameters: "doctor"
+Name: "{group}\Webcamo"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\Webcamo.vbs"""; IconFilename: "{app}\webcamo.ico"
+Name: "{group}\Webcamo Diagnostics"; Filename: "{cmd}"; Parameters: "/K ""{app}\webcamo.cmd"" doctor"; IconFilename: "{app}\webcamo.ico"
 Name: "{group}\Uninstall Webcamo"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Webcamo"; Filename: "{app}\webcamo.exe"; Parameters: "dashboard"; Tasks: desktopicon
+Name: "{autodesktop}\Webcamo"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\Webcamo.vbs"""; IconFilename: "{app}\webcamo.ico"; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Webcamo"; \
-  ValueData: """{app}\webcamo.exe"" run --no-window"; Flags: uninsdeletevalue; Tasks: autostart
+  ValueData: """{sys}\wscript.exe"" ""{app}\Webcamo.vbs"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
-Filename: "{app}\webcamo.exe"; Parameters: "dashboard"; Description: "Launch Webcamo now"; Flags: nowait postinstall skipifsilent
-
-[UninstallRun]
-Filename: "{cmd}"; Parameters: "/C taskkill /IM node.exe /FI ""WINDOWTITLE eq webcamo*"" /F"; Flags: runhidden; RunOnceId: "StopWebcamo"
+Filename: "{sys}\wscript.exe"; Parameters: """{app}\Webcamo.vbs"""; Description: "Launch Webcamo now"; Flags: nowait postinstall skipifsilent

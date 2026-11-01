@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -43,8 +44,14 @@ export class ApiModule {
   async start(port: number): Promise<void> {
     await this.#app.register(fastifyWebsocket);
 
-    const here = dirname(fileURLToPath(import.meta.url));
-    await this.#app.register(fastifyStatic, { root: join(here, 'static'), prefix: '/' });
+    const here =
+      typeof __dirname === 'string'
+        ? __dirname
+        : dirname(fileURLToPath(import.meta.url));
+    const staticRoot = existsSync(join(here, 'static'))
+      ? join(here, 'static')
+      : join(here, 'modules', 'api', 'static');
+    await this.#app.register(fastifyStatic, { root: staticRoot, prefix: '/' });
 
     await registerApiRoutes(this.#app, this.#deps);
     await registerWsRoutes(this.#app, this.#deps);

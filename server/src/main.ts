@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import http from 'node:http';
@@ -10,15 +9,10 @@ import { NativeWindowLauncher } from './modules/window/infrastructure/NativeWind
 
 const run = promisify(execFile);
 
+const WEBCAMO_VERSION = '0.1.0';
+
 async function getVersion(): Promise<string> {
-  try {
-    const pkgPath = new URL('../package.json', import.meta.url);
-    const raw = await readFile(pkgPath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed.version ?? '0.1.0';
-  } catch {
-    return '0.1.0';
-  }
+  return process.env.WEBCAMO_VERSION ?? WEBCAMO_VERSION;
 }
 
 async function isDaemonRunning(port: number): Promise<boolean> {
@@ -148,16 +142,23 @@ async function main(): Promise<void> {
   }
 
   const controlUrl = `http://127.0.0.1:${config.controlPort}`;
+  const noWindow = args.includes('--no-window') || args.includes('--headless') || process.env.NODE_ENV === 'test';
 
-  if (command === 'dashboard' || command === 'window') {
+  if (command === 'dashboard' || command === 'window' || command === 'run') {
     const running = await isDaemonRunning(config.controlPort);
     if (running) {
-      bootLog.info({ url: controlUrl }, 'Webcamo daemon already active; opening desktop window');
-      const launcher = new NativeWindowLauncher({ log: bootLog });
-      await launcher.openAppWindowOrBrowser(controlUrl);
+      if (!noWindow) {
+        bootLog.info({ url: controlUrl }, 'Webcamo daemon already active; opening desktop window');
+        const launcher = new NativeWindowLauncher({ log: bootLog });
+        await launcher.openAppWindowOrBrowser(controlUrl);
+      } else {
+        bootLog.info({ url: controlUrl }, 'Webcamo daemon already active');
+      }
       return;
     }
-    bootLog.info({ url: controlUrl }, 'Starting Webcamo daemon and opening desktop window');
+    if (!noWindow) {
+      bootLog.info({ url: controlUrl }, 'Starting Webcamo daemon and opening desktop window');
+    }
   }
 
   const log = createLogger({ level: config.logLevel, pretty: process.stdout.isTTY });
@@ -199,7 +200,6 @@ async function main(): Promise<void> {
   log.info(`control UI: ${controlUrl}`);
 
   // Open native app window unless running headless or explicitly suppressed
-  const noWindow = args.includes('--no-window') || args.includes('--headless') || process.env.NODE_ENV === 'test';
   if (!noWindow) {
     try {
       await app.window.openAppWindowOrBrowser(controlUrl);

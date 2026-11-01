@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package Webcamo as a .deb for Debian/Ubuntu.
+# Package Webcamo as a self-contained .deb and .tar.gz for Linux.
 #   packaging/linux/build-deb.sh 0.1.0 [amd64]
 set -euo pipefail
 VERSION="${1:-0.1.0}"
@@ -8,18 +8,16 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 DIST="$ROOT/dist/webcamo"
 
-mkdir -p "$DIST"
-# Ensure server is built and copied if not already packaged
-if [ ! -f "$DIST/main.js" ]; then
-  mkdir -p "$DIST"
-  cp -r "$ROOT/server/dist/." "$DIST/"
-  cat <<'EOF' > "$DIST/webcamo"
+rm -rf "$DIST"
+mkdir -p "$DIST/static"
+cp "$ROOT/server/dist/webcamo-bundle.cjs" "$DIST/webcamo-bundle.cjs"
+cp -r "$ROOT/server/dist/static/." "$DIST/static/"
+cat <<'EOF' > "$DIST/webcamo"
 #!/usr/bin/env bash
-DIR="$(cd "$(dirname "$0")" && pwd)"
-exec node "$DIR/main.js" "$@"
+DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")" && pwd)"
+exec node "$DIR/webcamo-bundle.cjs" "$@"
 EOF
-  chmod +x "$DIST/webcamo"
-fi
+chmod +x "$DIST/webcamo"
 
 PKG="$(mktemp -d)/webcamo_${VERSION}_${ARCH}"
 mkdir -p "$PKG/DEBIAN" "$PKG/opt" "$PKG/usr/bin" "$PKG/usr/share/applications" \
@@ -81,3 +79,6 @@ chmod 755 "$PKG/DEBIAN/postinst" "$PKG/DEBIAN/prerm"
 mkdir -p "$ROOT/dist"
 dpkg-deb --build --root-owner-group "$PKG" "$ROOT/dist/webcamo_${VERSION}_${ARCH}.deb"
 echo "Built dist/webcamo_${VERSION}_${ARCH}.deb"
+
+tar -czf "$ROOT/dist/webcamo-linux-x86_64-${VERSION}.tar.gz" -C "$ROOT/dist/webcamo" .
+echo "Built dist/webcamo-linux-x86_64-${VERSION}.tar.gz"
