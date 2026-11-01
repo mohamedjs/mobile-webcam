@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+:root {
+  --bg-deep: #080a0f;
+  --bg-surface: #101522;
+  --cyan: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.45);
+  --green: #00ff9d;
+  --red: #ff4d6d;
+  --amber: #ffb703;
+  --text-main: #f0f4fc;
+  --text-muted: #8892b0;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-bright: rgba(0, 229, 255, 0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+
+body.rtl {
+  direction: rtl;
+}
+
+canvas#stage {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  display: block;
+}
+
+/* UI Overlay elements */
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.el {
+  position: absolute;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Typography styles */
+.badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid var(--cyan-glow);
+  color: var(--cyan);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.25);
+}
+
+.badge-tag.problem {
+  background: rgba(255, 77, 109, 0.15);
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 24px rgba(255, 77, 109, 0.3);
+}
+
+.badge-tag.success {
+  background: rgba(0, 255, 157, 0.15);
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 24px rgba(0, 255, 157, 0.3);
+}
+
+.headline {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1.15;
+  color: #fff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.subheadline {
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Glass Cards */
+.card {
+  background: rgba(16, 21, 34, 0.85);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.hero-logo {
+  font-size: 140px;
+  font-weight: 900;
+  letter-spacing: -4px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.hero-logo .icon {
+  width: 140px;
+  height: 140px;
+  border-radius: 36px;
+  background: linear-gradient(135deg, #00e5ff, #0077ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 60px rgba(0, 229, 255, 0.5);
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(135deg, #00e5ff, #0099ff);
+  color: #050a14;
+  font-size: 36px;
+  font-weight: 800;
+  padding: 24px 60px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 229, 255, 0.45);
+}
+
+.mono {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+</style>
+</head>
+<body>
+<canvas id="stage" width="1920" height="1080"></canvas>
+
+<div class="layer">
+  <!-- Dynamic overlays if needed -->
+  <div class="el" id="toast"></div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const ctx = stage.getContext('2d');
+
+const TEXTS = {
+  en: {
+    s1_badge: "⚠ BUILT-IN WEBCAM · 720p 15FPS",
+    s1_head: "Grainy Laptop Webcam?",
+    s1_sub: "Blurry, dark, noisy sensor with washed out colors.",
+    s2_badge: "⚡ HARDWARE USB 3.0 DETECTED",
+    s2_head: "Plug In Your Phone.",
+    s2_sub: "Instant 4K60 video. Zero cloud delay. Zero setup.",
+    s2_proto: "TCP 127.0.0.1:47800 · LOCAL PIPEWIRE & V4L2",
+    s2_lat: "12ms LATENCY",
+    s3_badge: "OPTICAL CAMERA HUD · HARDWARE ENCODER",
+    s3_head: "DSLR-Grade Precision Controls",
+    s3_sub: "Switch lenses seamlessly: 0.5× Ultra-Wide, 1× Studio, 3× Telephoto.",
+    s3_blur: "Portrait Bokeh: f/1.4 Depth Blur Active",
+    s3_encoder: "MediaCodec & VideoToolbox Hardware Direct",
+    s4_badge: "VIRTUAL CAMERA SYSTEM",
+    s4_head: "Works with All Your Video Apps",
+    s4_sub: "Native virtual camera driver on Linux, macOS, and Windows.",
+    s5_title: "Webcamo",
+    s5_tag: "Turn your phone into a studio webcam over USB.",
+    s5_cta: "Free & Open Source · Download Now",
+    s5_os: "Linux · macOS · Windows · Android · iOS"
+  },
+  ar: {
+    s1_badge: "⚠ كاميرا اللابتوب المدمجة · 720p 15FPS",
+    s1_head: "كاميرا اللابتوب مش واضحة؟",
+    s1_sub: "صورة باهتة ومظلمة، وتشويش عالي في الإضاءة الضعيفة.",
+    s2_badge: "⚡ تم الاتصال عبر كابل USB 3.0",
+    s2_head: "وصّل موبايلك بالـ USB.",
+    s2_sub: "فيديو 4K60 فوري فائق النقاء. بدون سحابة وبدون تأخير.",
+    s2_proto: "اتصال محلي مشفر · تأخير فائق الانخفاض",
+    s2_lat: "زمن استجابة 12ms",
+    s3_badge: "واجهة الكاميرا الاحترافية وتشفير العتاد",
+    s3_head: "تحكم احترافي بكل عدسات الهاتف",
+    s3_sub: "تبديل فوري بين العدسة العريضة 0.5× والرئيسية 1× والتليفوتو 3×.",
+    s3_blur: "عزل خلفية طبيعي ذكي: عمق الميدان f/1.4",
+    s3_encoder: "تشفير عتادي مباشر: MediaCodec و VideoToolbox",
+    s4_badge: "تعريف الكاميرا الافتراضية",
+    s4_head: "متوافق مع كل برامج المحادثة والبث",
+    s4_sub: "كاميرا وميكروفون افتراضي أصيل على لينكس، ماك، وويندوز.",
+    s5_title: "ويبكامو",
+    s5_tag: "حوّل هاتفك إلى كاميرا استوديو احترافية عبر USB.",
+    s5_cta: "مجاني ومفتوح المصدر · حمّل الآن",
+    s5_os: "لينكس · ماك · ويندوز · أندرويد · آيفون"
+  }
+};
+
+let LANG = 'en';
+let T = TEXTS.en;
+let RTL = false;
+
+window.ready = Promise.resolve(true);
+
+window.setup = tl => {
+  LANG = tl.lang || 'en';
+  T = TEXTS[LANG] || TEXTS.en;
+  RTL = LANG === 'ar';
+  document.body.classList.toggle('rtl', RTL);
+};
+
+// Math / Easing helpers
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const back = (x, s = 1.4) => { x = clamp(x); return 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
+const win = (t, a, b, d = 0.5) => Math.min(ease((t - a) / d), 1 - ease((t - b) / d));
+
+// Render functions
+function drawGrid(t) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(0, 229, 255, 0.035)";
+  ctx.lineWidth = 1;
+  const sz = 60;
+  for (let x = 0; x < 1920; x += sz) {
+    if (x % (sz * 4) === 0) ctx.strokeStyle = "rgba(0, 229, 255, 0.07)";
+    else ctx.strokeStyle = "rgba(0, 229, 255, 0.025)";
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 1080);
+    ctx.stroke();
+  }
+  for (let y = 0; y < 1080; y += sz) {
+    if (y % (sz * 4) === 0) ctx.strokeStyle = "rgba(0, 229, 255, 0.07)";
+    else ctx.strokeStyle = "rgba(0, 229, 255, 0.025)";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(1920, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBackground(t) {
+  const bgGrad = ctx.createRadialGradient(960, 480, 50, 960, 540, 1100);
+  bgGrad.addColorStop(0, '#101726');
+  bgGrad.addColorStop(0.65, '#090d16');
+  bgGrad.addColorStop(1, '#04060a');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  // Soft cyan spot light
+  const spotGrad = ctx.createRadialGradient(960, 360, 10, 960, 360, 600);
+  spotGrad.addColorStop(0, 'rgba(0, 229, 255, 0.09)');
+  spotGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+  ctx.fillStyle = spotGrad;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  drawGrid(t);
+}
+
+function drawPill(x, y, text, type = 'cyan', alpha = 1) {
+  if (alpha <= 0.001) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = '700 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  const metrics = ctx.measureText(text);
+  const pw = metrics.width + 48;
+  const ph = 46;
+  const px = RTL ? x - pw : x;
+
+  ctx.beginPath();
+  ctx.roundRect(px, y, pw, ph, 23);
+
+  let col = '#00e5ff';
+  let bg = 'rgba(0, 229, 255, 0.12)';
+  if (type === 'red') { col = '#ff4d6d'; bg = 'rgba(255, 77, 109, 0.15)'; }
+  if (type === 'green') { col = '#00ff9d'; bg = 'rgba(0, 255, 157, 0.15)'; }
+
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = col;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, px + 24, y + ph / 2);
+  ctx.restore();
+}
+
+// ── Scene 1: The Problem (0 - 4.5s) ──
+function drawScene1(t) {
+  const o = win(t, 0.2, 4.2, 0.4);
+  if (o <= 0.001) return;
+
+  ctx.save();
+  ctx.globalAlpha = o;
+
+  // Text titles
+  const textX = RTL ? 1600 : 320;
+  ctx.textAlign = RTL ? 'right' : 'left';
+
+  drawPill(textX, 220, T.s1_badge, 'red', o);
+
+  ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(T.s1_head, textX, 330);
+
+  ctx.font = '400 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#8e9aaf';
+  ctx.fillText(T.s1_sub, textX, 395);
+
+  // Simulated noisy laptop screen mockup
+  const mx = 640, my = 460, mw = 640, mh = 420;
+  ctx.fillStyle = '#141824';
+  ctx.beginPath();
+  ctx.roundRect(mx, my, mw, mh, 16);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 77, 109, 0.3)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw noisy webcam frame inside
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(mx + 12, my + 12, mw - 24, mh - 24, 10);
+  ctx.clip();
+  ctx.fillStyle = '#1e2430';
+  ctx.fillRect(mx + 12, my + 12, mw - 24, mh - 24);
+
+  // Simulated dim noisy silhouette
+  ctx.fillStyle = '#2c3548';
+  ctx.beginPath();
+  ctx.arc(mx + mw / 2, my + 170, 70, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(mx + mw / 2, my + 380, 160, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Noise lines & low-fps stutter
+  for (let i = 0; i < 40; i++) {
+    const ny = my + 12 + ((i * 19 + Math.floor(t * 15) * 23) % (mh - 24));
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(mx + 12, ny, mw - 24, 3);
+  }
+
+  // Red latency warning tag inside
+  ctx.fillStyle = 'rgba(255, 77, 109, 0.85)';
+  ctx.font = '700 20px monospace';
+  ctx.fillText("● 720p 15fps · High Noise · Latency > 350ms", mx + 30, my + 50);
+
+  ctx.restore();
+  ctx.restore();
+}
+
+// ── Scene 2: Plug in your phone (4.5s - 10.5s) ──
+function drawScene2(t) {
+  const o = win(t, 4.6, 10.2, 0.5);
+  if (o <= 0.001) return;
+
+  ctx.save();
+  ctx.globalAlpha = o;
+
+  const textX = RTL ? 1600 : 320;
+  ctx.textAlign = RTL ? 'right' : 'left';
+
+  drawPill(textX, 160, T.s2_badge, 'green', o);
+
+  ctx.font = '800 68px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(T.s2_head, textX, 280);
+
+  ctx.font = '400 32px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#8e9aaf';
+  ctx.fillText(T.s2_sub, textX, 345);
+
+  // Phone Mockup (Center-Right or Center)
+  const px = 960 - 150;
+  const py = 430;
+  const pw = 300;
+  const ph = 520;
+
+  // Phone body
+  ctx.fillStyle = '#0f1420';
+  ctx.beginPath();
+  ctx.roundRect(px, py, pw, ph, 42);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.5)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Dynamic Island / Camera hole
+  ctx.fillStyle = '#06080e';
+  ctx.beginPath();
+  ctx.roundRect(px + pw / 2 - 40, py + 18, 80, 24, 12);
+  ctx.fill();
+
+  // Screen area
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(px + 10, py + 10, pw - 20, ph - 20, 34);
+  ctx.clip();
+
+  // Vibrant camera preview gradient
+  const camGrad = ctx.createLinearGradient(px, py, px + pw, py + ph);
+  camGrad.addColorStop(0, '#002b4d');
+  camGrad.addColorStop(0.5, '#005f73');
+  camGrad.addColorStop(1, '#0a9396');
+  ctx.fillStyle = camGrad;
+  ctx.fillRect(px, py, pw, ph);
+
+  // High quality silhouette subject
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(px + pw / 2, py + 220, 65, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px + pw / 2, py + 440, 150, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Live 4K badge
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(px + 20, py + 50, 130, 36);
+  ctx.fillStyle = '#00ff9d';
+  ctx.font = '700 18px monospace';
+  ctx.fillText("● 4K60 LIVE", px + 30, py + 74);
+
+  ctx.restore();
+
+  // USB-C Cable Animation
+  const cableProgress = ease((t - 4.8) / 0.8);
+  const cableY = 1080 - (1080 - (py + ph + 2)) * cableProgress;
+
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 6;
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.moveTo(px + pw / 2, 1080);
+  ctx.lineTo(px + pw / 2, cableY);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // USB Plug head
+  if (cableProgress > 0.8) {
+    ctx.fillStyle = '#c0c8de';
+    ctx.beginPath();
+    ctx.roundRect(px + pw / 2 - 22, py + ph - 8, 44, 28, 6);
+    ctx.fill();
+
+    // Pulse shockwave when connected
+    const connectAge = t - 5.6;
+    if (connectAge > 0 && connectAge < 1.5) {
+      const ringR = connectAge * 120;
+      ctx.strokeStyle = `rgba(0, 255, 157, ${1 - connectAge / 1.5})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(px + pw / 2, py + ph, ringR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Latency & Protocol Telemetry Cards
+  if (t > 6.0) {
+    const cardO = ease((t - 6.0) / 0.5);
+    ctx.globalAlpha = o * cardO;
+
+    // Latency number box (left side)
+    const latX = RTL ? 1200 : 320;
+    ctx.fillStyle = 'rgba(16, 21, 34, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(latX, 480, 280, 180, 20);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 255, 157, 0.4)';
+    ctx.stroke();
+
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '800 64px monospace';
+    const curLat = Math.max(12, Math.round(350 - ease((t - 6.2) / 0.8) * 338));
+    ctx.fillText(`${curLat}ms`, latX + 30, 560);
+
+    ctx.fillStyle = '#8e9aaf';
+    ctx.font = '600 20px -apple-system, sans-serif';
+    ctx.fillText("ZERO CLOUD DELAY", latX + 30, 610);
+
+    // Protocol info box (right side)
+    const protoX = RTL ? 320 : 1320;
+    ctx.fillStyle = 'rgba(16, 21, 34, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(protoX, 480, 320, 180, 20);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+    ctx.stroke();
+
+    ctx.fillStyle = '#00e5ff';
+    ctx.font = '700 22px monospace';
+    ctx.fillText("127.0.0.1:47800", protoX + 24, 540);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '500 20px -apple-system, sans-serif';
+    ctx.fillText("Raw H.264 NAL Units", protoX + 24, 580);
+    ctx.fillText("Local Unix / USB Socket", protoX + 24, 615);
+  }
+
+  ctx.restore();
+}
+
+// ── Scene 3: Studio Camera HUD (10.5s - 17.0s) ──
+function drawScene3(t) {
+  const o = win(t, 10.6, 16.8, 0.5);
+  if (o <= 0.001) return;
+
+  ctx.save();
+  ctx.globalAlpha = o;
+
+  const textX = RTL ? 1600 : 320;
+  ctx.textAlign = RTL ? 'right' : 'left';
+
+  drawPill(textX, 100, T.s3_badge, 'cyan', o);
+
+  ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(T.s3_head, textX, 205);
+
+  ctx.font = '400 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#8e9aaf';
+  ctx.fillText(T.s3_sub, textX, 260);
+
+  // Large Viewfinder Monitor in center
+  const vx = 410, vy = 310, vw = 1100, vh = 620;
+
+  // Viewfinder border
+  ctx.fillStyle = '#0a0e18';
+  ctx.beginPath();
+  ctx.roundRect(vx, vy, vw, vh, 24);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(vx + 4, vy + 4, vw - 8, vh - 8, 20);
+  ctx.clip();
+
+  // Cinematic video stream background
+  // If bokeh active (t > 13.5), blur effect simulation
+  const bokehActive = t > 13.5;
+  const bokehAmount = bokehActive ? ease((t - 13.5) / 0.8) : 0;
+
+  const viewGrad = ctx.createLinearGradient(vx, vy, vx + vw, vy + vh);
+  viewGrad.addColorStop(0, '#02182b');
+  viewGrad.addColorStop(0.5, '#0a3641');
+  viewGrad.addColorStop(1, '#05668d');
+  ctx.fillStyle = viewGrad;
+  ctx.fillRect(vx, vy, vw, vh);
+
+  // Golden ratio grid lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(vx + vw * 0.382, vy); ctx.lineTo(vx + vw * 0.382, vy + vh);
+  ctx.moveTo(vx + vw * 0.618, vy); ctx.lineTo(vx + vw * 0.618, vy + vh);
+  ctx.moveTo(vx, vy + vh * 0.382); ctx.lineTo(vx + vw, vy + vh * 0.382);
+  ctx.moveTo(vx, vy + vh * 0.618); ctx.lineTo(vx + vw, vy + vh * 0.618);
+  ctx.stroke();
+
+  // Subject in focus
+  const zoomFactor = t > 12.0 ? 1 + 0.3 * ease((t - 12.0) / 0.6) : 1;
+  ctx.save();
+  ctx.translate(vx + vw / 2, vy + vh / 2);
+  ctx.scale(zoomFactor, zoomFactor);
+
+  // Background bokeh circles if active
+  if (bokehAmount > 0) {
+    ctx.fillStyle = `rgba(0, 229, 255, ${0.18 * bokehAmount})`;
+    ctx.beginPath(); ctx.arc(-240, -120, 60 * bokehAmount, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(280, -90, 80 * bokehAmount, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-180, 140, 70 * bokehAmount, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(220, 160, 90 * bokehAmount, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Elegant studio silhouette
+  const subjGrad = ctx.createLinearGradient(0, -150, 0, 300);
+  subjGrad.addColorStop(0, '#e2e8f0');
+  subjGrad.addColorStop(1, '#94a3b8');
+  ctx.fillStyle = subjGrad;
+  ctx.beginPath();
+  ctx.arc(0, -50, 100, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(0, 280, 250, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // Viewfinder Reticle Brackets [ + ]
+  const rx = vx + vw / 2;
+  const ry = vy + vh / 2;
+  const rw = 180, rh = 180;
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 3;
+
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(rx - rw / 2 + 30, ry - rh / 2);
+  ctx.lineTo(rx - rw / 2, ry - rh / 2);
+  ctx.lineTo(rx - rw / 2, ry - rh / 2 + 30);
+  ctx.stroke();
+
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(rx + rw / 2 - 30, ry - rh / 2);
+  ctx.lineTo(rx + rw / 2, ry - rh / 2);
+  ctx.lineTo(rx + rw / 2, ry - rh / 2 + 30);
+  ctx.stroke();
+
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(rx - rw / 2 + 30, ry + rh / 2);
+  ctx.lineTo(rx - rw / 2, ry + rh / 2);
+  ctx.lineTo(rx - rw / 2, ry + rh / 2 - 30);
+  ctx.stroke();
+
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(rx + rw / 2 - 30, ry + rh / 2);
+  ctx.lineTo(rx + rw / 2, ry + rh / 2);
+  ctx.lineTo(rx + rw / 2, ry + rh / 2 - 30);
+  ctx.stroke();
+
+  // Center crosshair
+  ctx.beginPath();
+  ctx.moveTo(rx - 15, ry); ctx.lineTo(rx + 15, ry);
+  ctx.moveTo(rx, ry - 15); ctx.lineTo(rx, ry + 15);
+  ctx.stroke();
+
+  // Top Info Banner inside HUD
+  ctx.fillStyle = 'rgba(10, 14, 24, 0.85)';
+  ctx.fillRect(vx, vy, vw, 60);
+
+  ctx.fillStyle = '#ff4d6d';
+  ctx.beginPath();
+  ctx.arc(vx + 35, vy + 30, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 20px monospace';
+  ctx.fillText("REC 4K UHD · 60.00 FPS · 3840×2160 · 45 Mbps H.264", vx + 55, vy + 36);
+
+  // Audio VU Meter (Dancing bars)
+  const vuX = vx + vw - 190;
+  ctx.fillStyle = '#00ff9d';
+  for (let b = 0; b < 14; b++) {
+    const barH = Math.abs(Math.sin(t * 8 + b * 0.7)) * 26 + 6;
+    ctx.fillRect(vuX + b * 11, vy + 45 - barH, 7, barH);
+  }
+
+  // Lens Switcher Dock (Bottom Center inside HUD)
+  const lenses = ["0.5× Ultra-Wide", "1× Wide", "3× Telephoto"];
+  const selectedLens = t > 12.0 ? 1 : 0;
+  const barW = 560, barH = 58;
+  const barX = vx + vw / 2 - barW / 2;
+  const barY = vy + vh - 80;
+
+  // Frosted dark dock background
+  ctx.fillStyle = 'rgba(8, 12, 20, 0.9)';
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, barW, barH, 29);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  lenses.forEach((lens, idx) => {
+    const isSel = idx === selectedLens;
+    const btnW = 176;
+    const btnX = barX + 6 + idx * 182;
+    const btnY = barY + 6;
+    const btnH = barH - 12;
+
+    if (isSel) {
+      ctx.fillStyle = '#00e5ff';
+      ctx.shadowColor = 'rgba(0, 229, 255, 0.5)';
+      ctx.shadowBlur = 15;
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.beginPath();
+    ctx.roundRect(btnX, btnY, btnW, btnH, 23);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = isSel ? '#050a14' : '#cbd5e1';
+    ctx.font = '700 18px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(lens, btnX + btnW / 2, btnY + btnH / 2 + 6);
+  });
+
+  ctx.restore();
+
+  // Floating Bokeh Aperture Pill outside HUD
+  if (bokehActive) {
+    drawPill(RTL ? 1500 : 420, vy + vh + 25, T.s3_blur, 'cyan', bokehAmount);
+  }
+
+  // Hardware Badge
+  drawPill(RTL ? 920 : 1000, vy + vh + 25, T.s3_encoder, 'green', o);
+
+  ctx.restore();
+}
+
+// ── Scene 4: Works Everywhere (17.0s - 22.5s) ──
+function drawScene4(t) {
+  const o = win(t, 17.1, 22.3, 0.5);
+  if (o <= 0.001) return;
+
+  ctx.save();
+  ctx.globalAlpha = o;
+
+  const textX = RTL ? 1600 : 320;
+  ctx.textAlign = RTL ? 'right' : 'left';
+
+  drawPill(textX, 120, T.s4_badge, 'cyan', o);
+
+  ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(T.s4_head, textX, 230);
+
+  ctx.font = '400 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#8e9aaf';
+  ctx.fillText(T.s4_sub, textX, 290);
+
+  // 4 App Cards
+  const apps = [
+    { name: "Zoom", sub: "Webcamo Virtual Cam", color: "#2D8CFF", delay: 17.4 },
+    { name: "Google Meet", sub: "Studio Camera 1080p", color: "#00AC47", delay: 17.8 },
+    { name: "Microsoft Teams", sub: "Ultra HD Input", color: "#5059C9", delay: 18.2 },
+    { name: "OBS Studio", sub: "/dev/video9 & DirectShow", color: "#302E31", delay: 18.6 }
+  ];
+
+  const gridStartX = 320;
+  const cardW = 300;
+  const cardH = 340;
+  const gap = 30;
+
+  apps.forEach((app, i) => {
+    const cardO = ease((t - app.delay) / 0.4);
+    const cardScale = back((t - app.delay) / 0.5);
+    if (cardO <= 0.001) return;
+
+    ctx.save();
+    const cx = gridStartX + i * (cardW + gap);
+    const cy = 420;
+
+    ctx.translate(cx + cardW / 2, cy + cardH / 2);
+    ctx.scale(cardScale, cardScale);
+    ctx.translate(-cx - cardW / 2, -cy - cardH / 2);
+    ctx.globalAlpha = o * cardO;
+
+    // Card background
+    ctx.fillStyle = '#101626';
+    ctx.beginPath();
+    ctx.roundRect(cx, cy, cardW, cardH, 24);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // App Icon Square
+    ctx.fillStyle = app.color;
+    ctx.beginPath();
+    ctx.roundRect(cx + cardW / 2 - 45, cy + 40, 90, 90, 22);
+    ctx.fill();
+
+    // White Initial Letter
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 48px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(app.name[0], cx + cardW / 2, cy + 104);
+
+    // App Name
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 28px -apple-system, sans-serif';
+    ctx.fillText(app.name, cx + cardW / 2, cy + 185);
+
+    // Subtitle
+    ctx.fillStyle = '#8e9aaf';
+    ctx.font = '500 18px -apple-system, sans-serif';
+    ctx.fillText(app.sub, cx + cardW / 2, cy + 225);
+
+    // Live Badge at bottom
+    ctx.fillStyle = 'rgba(0, 255, 157, 0.15)';
+    ctx.beginPath();
+    ctx.roundRect(cx + 30, cy + 265, cardW - 60, 44, 22);
+    ctx.fill();
+    ctx.strokeStyle = '#00ff9d';
+    ctx.stroke();
+
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '700 18px monospace';
+    ctx.fillText("● ACTIVE 60 FPS", cx + cardW / 2, cy + 293);
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+// ── Scene 5: Grand Finale & Call to Action (22.5s - 28.0s) ──
+function drawScene5(t) {
+  const o = clamp((t - 22.5) / 0.6);
+  if (o <= 0.001) return;
+
+  ctx.save();
+  ctx.globalAlpha = o;
+
+  const cx = 960;
+  const cy = 340;
+
+  // Glowing Webcamo Brand Icon
+  const iconScale = back((t - 22.6) / 0.7);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(iconScale, iconScale);
+
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 50;
+  const iconGrad = ctx.createLinearGradient(-65, -65, 65, 65);
+  iconGrad.addColorStop(0, '#00e5ff');
+  iconGrad.addColorStop(1, '#0077ff');
+  ctx.fillStyle = iconGrad;
+  ctx.beginPath();
+  ctx.roundRect(-65, -65, 130, 130, 34);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // White "W" glyph
+  ctx.fillStyle = '#050a14';
+  ctx.font = '900 80px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText("W", 0, 4);
+
+  ctx.restore();
+
+  // Title "Webcamo"
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 96px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillText(T.s5_title, cx, 500);
+
+  // Subheadline
+  ctx.font = '500 36px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#8e9aaf';
+  ctx.fillText(T.s5_tag, cx, 565);
+
+  // Big CTA Button
+  const ctaProgress = back((t - 23.4) / 0.6);
+  ctx.save();
+  ctx.translate(cx, 680);
+  ctx.scale(ctaProgress, ctaProgress);
+
+  const btnW = 620, btnH = 80;
+  ctx.shadowColor = 'rgba(0, 229, 255, 0.4)';
+  ctx.shadowBlur = 30;
+
+  const btnGrad = ctx.createLinearGradient(-btnW / 2, 0, btnW / 2, 0);
+  btnGrad.addColorStop(0, '#00e5ff');
+  btnGrad.addColorStop(1, '#0099ff');
+  ctx.fillStyle = btnGrad;
+  ctx.beginPath();
+  ctx.roundRect(-btnW / 2, -btnH / 2, btnW, btnH, 40);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#040711';
+  ctx.font = '800 32px -apple-system, sans-serif';
+  ctx.fillText(T.s5_cta, 0, 8);
+
+  ctx.restore();
+
+  // OS platforms
+  ctx.fillStyle = '#64748b';
+  ctx.font = '600 24px monospace';
+  ctx.fillText(T.s5_os, cx, 810);
+
+  // Fade out at end
+  if (t > 27.2) {
+    const fadeOut = clamp((t - 27.2) / 0.7);
+    ctx.fillStyle = `rgba(8, 10, 15, ${fadeOut})`;
+    ctx.fillRect(0, 0, 1920, 1080);
+  }
+
+  ctx.restore();
+}
+
+// Main deterministic frame renderer
+window.render = t => {
+  ctx.clearRect(0, 0, 1920, 1080);
+  drawBackground(t);
+
+  drawScene1(t);
+  drawScene2(t);
+  drawScene3(t);
+  drawScene4(t);
+  drawScene5(t);
+};
+</script>
+</body>
+</html>

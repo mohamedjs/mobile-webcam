@@ -374,3 +374,67 @@ footer {
   flex-wrap: wrap;
   gap: 16px;
 }
+
+/* Video Showcase (Dark Keynote Style) */
+.video-section {
+  margin-top: 64px;
+}
+.video-card {
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+}
+.video-header {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto 28px;
+}
+.video-header h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  margin-bottom: 12px;
+}
+.video-header .sub {
+  font-size: 1.1rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.badge-pill {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.video-player-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #080a0f;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.video-player-wrap video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  background: #080a0f;
+}
+.hero-vid {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 16px;
+}
+

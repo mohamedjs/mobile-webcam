@@ -7,6 +7,7 @@ const FALLBACK_VERSION = "v0.1.0";
 const T = {
   en: {
     "nav.download": "Download",
+    "nav.demo": "Demo",
     "nav.features": "Features",
     "nav.mobile": "Mobile Apps",
     "nav.faq": "FAQ",
@@ -16,9 +17,15 @@ const T = {
     "hero.title": "Turn your phone into a studio webcam over USB.",
     "hero.lead": "Broadcast pristine 4K & 1080p60 video with ultra-low latency. Hardware encoded directly on your iPhone or Android, streamed over cable straight to Zoom, Meet, Teams, and OBS.",
     "hero.download": "Download for {os}",
+    "hero.watch": "Watch Demo",
     "hero.other": "Other platforms",
+    "hero.previewLive": "LIVE 4K60",
     "hero.mobileNotice": "Webcamo desktop app runs on your computer — install the mobile app below.",
     "hero.version": "Version {v} · 100% Local & Free",
+
+    "video.badge": "Watch Keynote",
+    "video.title": "DSLR-Grade Video with Zero Cloud Latency",
+    "video.sub": "Watch how Webcamo hardware-encodes 4K60 directly on iPhone & Android, streaming raw H.264 over USB into Zoom, Meet, Teams, and OBS.",
 
     "dl.title": "Download Webcamo",
     "dl.sub": "Free, open source, and private. Connect with a USB cable for crystal-clear video and synchronized microphone.",
@@ -90,6 +97,7 @@ const T = {
   },
   ar: {
     "nav.download": "التحميل",
+    "nav.demo": "عرض توضيحي",
     "nav.features": "المميزات",
     "nav.mobile": "تطبيقات الموبايل",
     "nav.faq": "الأسئلة الشائعة",
@@ -99,9 +107,15 @@ const T = {
     "hero.title": "حوّل موبايلك لكاميرا احترافية فائقة الجودة عبر كابل الـ USB.",
     "hero.lead": "بث فيديو نقي بدقة 4K و 1080p60 مع استجابة فورية بدون أي تأخير. تشفير عتادي مباشر على معالج آيفون أو أندرويد عبر الكابل مباشرة لبرامج Zoom و Meet و Teams و OBS.",
     "hero.download": "تحميل لنظام {os}",
+    "hero.watch": "مشاهدة العرض",
     "hero.other": "أنظمة أخرى",
+    "hero.previewLive": "بث مباشر 4K60",
     "hero.mobileNotice": "تطبيق ويبكامو المكتبي يعمل على الكمبيوتر — حمّل تطبيق الموبايل بالأسفل.",
     "hero.version": "الإصدار {v} · مجاني ومحلي 100%",
+
+    "video.badge": "العرض التقديمي",
+    "video.title": "جودة كاميرات احترافية مع انعدام التأخير السحابي",
+    "video.sub": "شاهد كيف يقوم ويبكامو بتشفير 4K60 عتادياً مباشرة على آيفون وأندرويد وبث H.264 عبر USB لبرامج Zoom و Meet و Teams و OBS.",
 
     "dl.title": "تحميل ويبكامو",
     "dl.sub": "مجاني ومفتوح المصدر وخاص تماماً. وصّل الموبايل بكابل USB واستمتع بكاميرا ومايكروفون عالي النقاء.",
@@ -230,6 +244,33 @@ function applyLanguage(lang) {
 
   const langBtn = $("#btn-lang-toggle");
   if (langBtn) langBtn.textContent = lang === "ar" ? "English" : "العربية";
+
+  // Switch keynote and hero videos to current language
+  const video = $("#intro");
+  const heroVid = $("#hero-preview-vid");
+  const mp4Src = `./assets/intro-${lang}.mp4`;
+  const posterSrc = `./assets/intro-${lang}.jpg`;
+
+  if (video) {
+    video.poster = posterSrc;
+    if (!video.src.endsWith(`intro-${lang}.mp4`)) {
+      const playing = !video.paused;
+      const cur = video.currentTime;
+      video.src = mp4Src;
+      video.currentTime = cur;
+      if (playing) video.play().catch(() => {});
+    }
+  }
+
+  if (heroVid) {
+    heroVid.poster = posterSrc;
+    if (!heroVid.src.endsWith(`intro-${lang}.mp4`)) {
+      const cur = heroVid.currentTime;
+      heroVid.src = mp4Src;
+      heroVid.currentTime = cur;
+      heroVid.play().catch(() => {});
+    }
+  }
 }
 
 function applyTheme(theme) {

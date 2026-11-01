@@ -6,6 +6,8 @@
   <title>Webcamo — Turn Your Phone into a Studio Webcam over USB</title>
   <meta name="description" content="Broadcast pristine 4K & 1080p60 video with ultra-low latency over USB cable. Works locally on Linux, macOS, and Windows with iOS and Android." />
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+  <meta property="og:image" content="./assets/intro-en.jpg" />
+  <meta property="og:video" content="./assets/intro-en.mp4" />
   <link rel="stylesheet" href="./site.css" />
   <script>
     // Prevent theme flash
@@ -35,6 +37,7 @@
       </a>
 
       <nav class="links">
+        <a href="#demo" data-i18n="nav.demo">Demo</a>
         <a href="#features" data-i18n="nav.features">Features</a>
         <a href="#downloads" data-i18n="nav.download">Download</a>
         <a href="#mobile" data-i18n="nav.mobile">Mobile Apps</a>
@@ -64,7 +67,7 @@
             <span class="os-icon" data-os="windows"></span>
             <span data-i18n="hero.download">Download for Desktop</span>
           </a>
-          <a href="#downloads" class="btn big ghost" data-i18n="hero.other">Other platforms</a>
+          <a href="#demo" class="btn big ghost" data-i18n="hero.watch">Watch Demo</a>
         </div>
 
         <p class="hint" data-i18n="hero.version">Version v0.1.0 · 100% Local & Free</p>
@@ -74,20 +77,38 @@
         <div class="hero-preview-box">
           <div class="hero-badge-live">
             <span class="dot-rec"></span>
-            <span>LIVE 1080p60</span>
+            <span data-i18n="hero.previewLive">LIVE 4K60</span>
           </div>
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
-            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-            <circle cx="12" cy="13" r="3"/>
-          </svg>
+          <video id="hero-preview-vid" class="hero-vid" autoplay muted loop playsinline poster="./assets/intro-en.jpg">
+            <source id="hero-preview-src" src="./assets/intro-en.mp4" type="video/mp4" />
+          </video>
         </div>
 
         <div class="spec-tags">
           <span class="tag">4K / 1080p60</span>
-          <span class="tag">50ms Latency</span>
+          <span class="tag">12ms Latency</span>
           <span class="tag">USB 3.0</span>
           <span class="tag">AAC Microphone</span>
-          <span class="tag">Portrait Blur</span>
+          <span class="tag">Portrait Bokeh</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Keynote Video Showcase Section ───────────────────────────── -->
+    <section id="demo" class="section video-section">
+      <div class="video-card card">
+        <div class="video-header">
+          <span class="badge-pill" data-i18n="video.badge">Watch Keynote</span>
+          <h2 data-i18n="video.title">DSLR-Grade Video with Zero Cloud Latency</h2>
+          <p class="sub" data-i18n="video.sub">
+            Watch how Webcamo hardware-encodes 4K60 directly on iPhone & Android, streaming raw H.264 over USB into Zoom, Meet, Teams, and OBS.
+          </p>
+        </div>
+        <div class="video-player-wrap">
+          <video id="intro" controls playsinline preload="metadata" poster="./assets/intro-en.jpg">
+            <source id="intro-src" src="./assets/intro-en.mp4" type="video/mp4" />
+            Your browser does not support HTML5 video.
+          </video>
         </div>
       </div>
     </section>

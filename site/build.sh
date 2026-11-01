@@ -8,7 +8,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT/assets"
 
 cp "$ROOT/site/index.html" "$ROOT/site/site.css" "$ROOT/site/site.js" "$OUT/"
-cp "$ROOT/site/assets/favicon.svg" "$OUT/assets/"
+cp -r "$ROOT/site/assets/"* "$OUT/assets/"
 
 # Bake latest release metadata if available; otherwise write fallback release.json
 if command -v curl >/dev/null; then
