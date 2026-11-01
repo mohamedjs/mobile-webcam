@@ -112,45 +112,34 @@ export const AppKeynote: React.FC<{ lang: 'en' | 'ar' }> = ({ lang }) => {
 
 ### B. Sound Effects & Audio (`@remotion/sfx` + `@remotion/media`)
 
-Use `<Audio>` from `@remotion/media` paired with `<Sequence>` from `remotion` and sound assets from `@remotion/sfx` (or offline cached `staticFile('sfx/...')`):
+Use `<Audio>` from `@remotion/media` paired with `<Sequence>` from `remotion` and clean UI/transition foley from `@remotion/sfx` (or offline cached `staticFile('sfx/...')`).
+**Important**: Never add a continuous synthesized drone/pad or meme sounds (`loadingLag`, `vineBoom`, etc.) across the video—keep the background silent and use only crisp, subtle UI/transition SFX (`whoosh`, `uiSwitch`, `shutterModern`, `ding`, `mouseClick`, `pageTurn`):
 
 ```tsx
 import { Sequence, staticFile } from 'remotion';
 import { Audio } from '@remotion/media';
-import { whoosh, uiSwitch, shutterModern, ding, loadingLag } from '@remotion/sfx';
-
-// Available @remotion/sfx exports:
-// whoosh, whip, uiSwitch, shutterModern, shutterOld, ding, mouseClick,
-// pageTurn, loadingLag, snapchatNotification, windowsXpError, vineBoom, etc.
+import { whoosh, uiSwitch, shutterModern, ding } from '@remotion/sfx';
 
 export const SoundTrack: React.FC = () => (
   <>
-    {/* Continuous ambient keynote pad */}
-    <Audio src={staticFile('sfx/ambient-pad.wav')} volume={0.35} />
-
-    {/* Scene 1 problem glitch sound */}
-    <Sequence from={15} durationInFrames={60}>
-      <Audio src={staticFile('sfx/loading-lag.wav')} volume={0.35} />
-    </Sequence>
-
     {/* Transition 1 whoosh (starts when transition 1 begins at frame 130) */}
     <Sequence from={130} durationInFrames={35}>
-      <Audio src={staticFile('sfx/whoosh.wav')} volume={0.6} />
+      <Audio src={staticFile('sfx/whoosh.wav')} volume={0.45} />
     </Sequence>
 
     {/* UI action click / USB connect snap */}
     <Sequence from={175} durationInFrames={30}>
-      <Audio src={staticFile('sfx/switch.wav')} volume={0.7} />
+      <Audio src={staticFile('sfx/switch.wav')} volume={0.5} />
     </Sequence>
 
     {/* Camera / feature shutter lock */}
     <Sequence from={340} durationInFrames={40}>
-      <Audio src={staticFile('sfx/shutter-modern.wav')} volume={0.65} />
+      <Audio src={staticFile('sfx/shutter-modern.wav')} volume={0.55} />
     </Sequence>
 
     {/* Finale CTA chime */}
     <Sequence from={670} durationInFrames={90}>
-      <Audio src={staticFile('sfx/ding.wav')} volume={0.75} />
+      <Audio src={staticFile('sfx/ding.wav')} volume={0.6} />
     </Sequence>
   </>
 );
