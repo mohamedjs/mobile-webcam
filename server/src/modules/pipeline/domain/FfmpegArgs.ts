@@ -4,6 +4,7 @@ export interface FfmpegTargets {
   videoDevice: string;
   /** Omit for video-only (mic disabled, or the MJPEG profile). */
   audioSink?: string;
+  platform?: 'linux' | 'darwin' | 'win32';
 }
 
 export interface FfmpegBuildInput {
@@ -67,22 +68,42 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   // the writer match the pinned device by construction, whatever the phone
   // actually sends (a rotated frame, a mode the hardware silently substituted,
   // or a stale stream from before a resolution change).
-  const filters = [
-    `scale=${out.width}:${out.height}:flags=fast_bilinear`,
+  const filters: string[] = [];
+  if (settings.rotation === 90) {
+    filters.push('transpose=1');
+  } else if (settings.rotation === 180) {
+    filters.push('vflip', 'hflip');
+  } else if (settings.rotation === 270) {
+    filters.push('transpose=2');
+  }
+  filters.push(
+    `scale=${out.width}:${out.height}:force_original_aspect_ratio=decrease:flags=fast_bilinear`,
+    `pad=${out.width}:${out.height}:(ow-iw)/2:(oh-ih)/2:black`,
     `format=${V4L2_PIXEL_FORMAT.ffmpeg}`,
-  ];
+  );
   // The format filter is required: V4L2 consumers reject the encoder's native
   // pixel format, and the failure shows as a black frame rather than an error.
   // It must agree with the pinned device caps or the image shears.
   args.push('-vf', filters.join(','));
-  args.push('-flush_packets', '1', '-fps_mode', 'passthrough', '-f', 'v4l2', targets.videoDevice);
 
-  // --- audio ---
-  // The phone stream currently contains video-only. Disable audio sink output
-  // to avoid FFmpeg error "Output file does not contain any stream".
-  const wantsAudio = false;
-  if (wantsAudio) {
-    args.push('-map', '0:a:0?', '-f', 'pulse', '-device', targets.audioSink!, 'mobile_webcam');
+  const platform = targets.platform ?? (process.platform as 'linux' | 'darwin' | 'win32');
+  if (platform === 'linux' || (!targets.platform && targets.videoDevice.startsWith('/dev/video'))) {
+    args.push('-flush_packets', '1', '-fps_mode', 'passthrough', '-f', 'v4l2', targets.videoDevice);
+    // --- audio ---
+    if (targets.audioSink) {
+      args.push('-map', '0:a:0?', '-f', 'pulse', '-device', targets.audioSink, 'mobile_webcam');
+    }
+  } else if (platform === 'darwin') {
+    args.push('-flush_packets', '1', '-fps_mode', 'passthrough', '-f', 'null', '-');
+    if (targets.audioSink) {
+      args.push('-map', '0:a:0?', '-f', 'audiotoolbox', targets.audioSink);
+    }
+  } else {
+    // win32
+    args.push('-flush_packets', '1', '-fps_mode', 'passthrough', '-f', 'null', '-');
+    if (targets.audioSink) {
+      args.push('-map', '0:a:0?', '-f', 'dshow', `audio=${targets.audioSink}`);
+    }
   }
 
   return args;
@@ -95,9 +116,14 @@ export function buildPlaceholderArgs(opts: {
   height: number;
   fps: number;
   text?: string;
+  platform?: 'linux' | 'darwin' | 'win32';
 }): string[] {
   const { videoDevice, width, height, fps } = opts;
+  const platform = opts.platform ?? (process.platform as 'linux' | 'darwin' | 'win32');
   const text = (opts.text ?? 'Reconnecting...').replace(/[:\\']/g, '');
+  const outFormat = (platform === 'linux' || videoDevice.startsWith('/dev/video'))
+    ? ['-f', 'v4l2', videoDevice]
+    : ['-f', 'null', '-'];
   return [
     '-hide_banner', '-loglevel', 'error',
     '-re',
@@ -105,6 +131,6 @@ export function buildPlaceholderArgs(opts: {
     '-i', `smptebars=size=${width}x${height}:rate=${fps}`,
     '-vf', `drawtext=text='${text}':fontcolor=white:fontsize=${Math.round(height / 12)}:` +
            `box=1:boxcolor=black@0.6:boxborderw=12:x=(w-text_w)/2:y=(h-text_h)/2,format=${V4L2_PIXEL_FORMAT.ffmpeg}`,
-    '-f', 'v4l2', videoDevice,
+    ...outFormat,
   ];
 }

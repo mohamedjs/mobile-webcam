@@ -1,0 +1,20 @@
+[Unit]
+Description=Webcamo background daemon
+Documentation=https://github.com/mohamedjs/mobile-webcam
+# Wait for the audio and graphical session so PipeWire and display are ready
+After=graphical-session.target pipewire.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/opt/webcamo/webcamo run --no-window
+Restart=on-failure
+RestartSec=5
+# Allow cold boot initialization
+ExecStartPre=/bin/sleep 2
+Environment=NODE_ENV=production
+Environment=XDG_RUNTIME_DIR=%t
+PassEnvironment=DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP
+
+[Install]
+WantedBy=graphical-session.target

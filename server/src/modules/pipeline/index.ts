@@ -161,7 +161,7 @@ export class PipelineModule {
       settings.resolution.height,
       settings.fps,
     );
-    if (settings.audio.enabled) await this.#audio.ensure();
+    await this.#audio.ensure();
 
     // Scale to what the device REALLY is, not what we asked for. A mismatch
     // does not error — it shears the picture. docs/08 §7.2c.

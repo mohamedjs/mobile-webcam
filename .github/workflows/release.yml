@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version tag (e.g. 0.1.0)'
+        required: true
+        default: '0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and Package Linux
+        run: |
+          npm ci
+          npm run build --workspace=@mobile-webcam/shared
+          npm run build --workspace=@mobile-webcam/server
+          VERSION="${{ github.event.inputs.version || github.event.release.tag_name || '0.1.0' }}"
+          VERSION="${VERSION#v}"
+          bash packaging/linux/build-deb.sh "$VERSION" amd64
+          tar -czf "dist/webcamo-linux-x86_64-${VERSION}.tar.gz" -C dist/webcamo .
+
+      - name: Upload Linux Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          files: |
+            dist/webcamo_*_amd64.deb
+            dist/webcamo-linux-x86_64-*.tar.gz
+
+  macos:
+    runs-on: macos-14
+    strategy:
+      matrix:
+        arch: [arm64, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and Package macOS
+        run: |
+          npm ci
+          npm run build --workspace=@mobile-webcam/shared
+          npm run build --workspace=@mobile-webcam/server
+          VERSION="${{ github.event.inputs.version || github.event.release.tag_name || '0.1.0' }}"
+          VERSION="${VERSION#v}"
+          bash packaging/macos/build-app.sh "$VERSION" "${{ matrix.arch }}"
+
+      - name: Upload macOS Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          files: dist/Webcamo-*-macos-${{ matrix.arch }}.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and Package Windows
+        shell: bash
+        run: |
+          npm ci
+          npm run build --workspace=@mobile-webcam/shared
+          npm run build --workspace=@mobile-webcam/server
+          VERSION="${{ github.event.inputs.version || github.event.release.tag_name || '0.1.0' }}"
+          VERSION="${VERSION#v}"
+          mkdir -p dist/webcamo
+          cp -r server/dist/* dist/webcamo/
+          7z a "dist/webcamo-windows-x64-${VERSION}.zip" ./dist/webcamo/*
+
+      - name: Upload Windows Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          files: dist/webcamo-windows-x64-*.zip
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build Android APK
+        working-directory: mobile
+        run: |
+          npm ci
+          npx expo prebuild --platform android --clean
+          cd android
+          ./gradlew assembleRelease --no-daemon
+          VERSION="${{ github.event.inputs.version || github.event.release.tag_name || '0.1.0' }}"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "../../dist/webcamo-${VERSION}-android.apk" 2>/dev/null || true
+
+      - name: Upload Android APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          files: dist/webcamo-*-android.apk

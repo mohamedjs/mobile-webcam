@@ -25,7 +25,10 @@
   <header class="flex shrink-0 items-center gap-3 border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-800">
     <div>
       <div class="text-sm font-semibold leading-tight">mobile_webcam</div>
-      <div id="device-name" class="text-[11px] leading-tight text-zinc-500">no device</div>
+      <div class="flex items-center gap-1.5">
+        <span id="badge-platform" class="hidden rounded bg-blue-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400"></span>
+        <div id="device-name" class="text-[11px] leading-tight text-zinc-500">no device</div>
+      </div>
     </div>
 
     <span id="pill-state" class="rounded-full px-2.5 py-1 text-[11px] font-medium">—</span>
@@ -39,6 +42,7 @@
       </div>
       <button id="btn-start" class="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-500">Start</button>
       <button id="btn-stop"  class="rounded-lg bg-zinc-200 px-3.5 py-1.5 text-xs font-semibold hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700">Stop</button>
+      <button id="btn-lang"  class="rounded-lg border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700" title="Toggle language">AR</button>
       <button id="btn-theme" class="rounded-lg border border-zinc-300 px-2.5 py-1.5 text-xs dark:border-zinc-700" title="Light / dark">◐</button>
     </div>
   </header>
@@ -70,6 +74,15 @@
           <label class="block">
             <span class="mb-1 flex justify-between text-xs text-zinc-500"><span>Bitrate</span><span id="v-bitrate" class="tabular-nums">—</span></span>
             <input type="range" id="c-bitrate" class="w-full" min="1000000" max="20000000" step="500000" />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-xs text-zinc-500">Rotation</span>
+            <select id="c-rotation" class="w-full rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700">
+              <option value="0">0° (Landscape)</option>
+              <option value="90">90° (Portrait CW)</option>
+              <option value="180">180° (Upside Down)</option>
+              <option value="270">270° (Portrait CCW)</option>
+            </select>
           </label>
           <div class="flex items-center justify-between text-sm"><span>Mirror</span><input type="checkbox" id="c-mirror" class="h-4 w-4 accent-blue-600" /></div>
           <div class="flex items-center justify-between text-sm"><span>Torch</span><input type="checkbox" id="c-torch" class="h-4 w-4 accent-blue-600" /></div>
@@ -182,6 +195,21 @@ applyTheme(localStorage.getItem('theme') || 'dark');
 $('btn-theme').onclick = () =>
   applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 
+// ── language ─────────────────────────────────────────────────────────────
+const applyLang = (l) => {
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+  localStorage.setItem('lang', l);
+  const btn = $('btn-lang');
+  if (btn) btn.textContent = l === 'ar' ? 'EN' : 'AR';
+};
+applyLang(localStorage.getItem('lang') || 'en');
+const btnLang = $('btn-lang');
+if (btnLang) {
+  btnLang.onclick = () =>
+    applyLang(document.documentElement.lang === 'ar' ? 'en' : 'ar');
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────
 const fill = (el, items, value) => {
   el.innerHTML = '';
@@ -242,6 +270,7 @@ function paintSettings() {
   $('c-bitrate').value = settings.bitrate;
   $('v-bitrate').textContent = mbps(settings.bitrate);
 
+  $('c-rotation').value = String(settings.rotation ?? 0);
   $('c-mirror').checked = settings.mirror;
   $('c-torch').checked = settings.torch;
   $('c-hdr').checked = settings.hdr;
@@ -278,8 +307,22 @@ function paintStatus() {
   $('pill-state').className = 'rounded-full px-2.5 py-1 text-[11px] font-medium ' + tone;
   $('pill-state').textContent = s;
   $('pill-degraded').classList.toggle('hidden', !status.degraded);
-  $('device-name').textContent = status.device
-    ? `${status.device.name} · iOS ${status.device.ios}` : 'no device';
+
+  const dev = status.device;
+  const badge = $('badge-platform');
+  if (dev) {
+    const isAndroid = dev.platform === 'android' || (dev.ios && String(dev.ios).startsWith('Android'));
+    const osTag = isAndroid ? dev.ios : `iOS ${dev.ios}`;
+    $('device-name').textContent = `${dev.name} · ${osTag}`;
+    if (badge) {
+      badge.textContent = isAndroid ? 'Android' : 'iOS';
+      badge.classList.remove('hidden');
+    }
+  } else {
+    $('device-name').textContent = 'no device';
+    if (badge) badge.classList.add('hidden');
+  }
+
   $('v-profile').textContent = status.directMode ? `${status.profile} (direct)` : status.profile;
   $('v-video').textContent = status.video.exists ? (status.video.label || status.video.path) : 'missing';
   $('v-url').textContent = status.streamUrl;
@@ -313,6 +356,7 @@ on('c-zoom', 'change', (e) => patch({ zoom: Number(e.target.value) }));
 on('c-zoom', 'input', (e) => { $('v-zoom').textContent = Number(e.target.value).toFixed(1) + '×'; });
 on('c-bitrate', 'change', (e) => patch({ bitrate: Number(e.target.value) }));
 on('c-bitrate', 'input', (e) => { $('v-bitrate').textContent = mbps(Number(e.target.value)); });
+on('c-rotation', 'change', (e) => patch({ rotation: Number(e.target.value) }));
 on('c-mirror', 'change', (e) => patch({ mirror: e.target.checked }));
 on('c-torch', 'change', (e) => patch({ torch: e.target.checked }));
 on('c-hdr', 'change', (e) => patch({ hdr: e.target.checked }));

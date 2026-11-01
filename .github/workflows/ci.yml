@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shared-and-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build & test shared package
+        run: |
+          npm run build --workspace=@mobile-webcam/shared
+          npm test --workspace=@mobile-webcam/shared
+
+      - name: Build & test desktop server
+        run: |
+          npm run build --workspace=@mobile-webcam/server
+          npm test --workspace=@mobile-webcam/server
+
+      - name: Server CLI smoke check
+        run: |
+          node server/dist/main.js --version
+          node server/dist/main.js doctor || true
+
+      - name: Linux .deb packaging test
+        run: |
+          bash packaging/linux/build-deb.sh 0.1.0 amd64
+
+  mobile-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Typecheck mobile app (Expo SDK 58)
+        working-directory: mobile
+        run: npm run typecheck
+
+      - name: Evaluate Expo config
+        working-directory: mobile
+        run: npx expo config --type public

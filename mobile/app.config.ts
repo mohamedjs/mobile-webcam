@@ -2,8 +2,8 @@ import type { ExpoConfig } from 'expo/config';
 
 /**
  * NOTE: this app CANNOT run in Expo Go. It opens a listening TCP socket and
- * drives AVCaptureSession through custom Swift — both need native code.
- * Use `expo prebuild` + an EAS development build. docs/00 §5 C2.
+ * drives camera and audio through custom native modules (Swift on iOS, Kotlin on Android).
+ * Use `expo prebuild` + an EAS/native development build.
  */
 const config: ExpoConfig = {
   name: 'webcamo',
@@ -13,26 +13,45 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'mobilewebcam',
   userInterfaceStyle: 'dark',
-  // New Architecture is the default in SDK 56 — no legacy bridge fallback exists.
   ios: {
     bundleIdentifier: 'com.mobilewebcam.app',
     supportsTablet: true,
     infoPlist: {
       NSCameraUsageDescription:
-        'mobile_webcam uses the camera to stream video to your computer over USB.',
+        'webcamo uses the camera to stream video to your computer over USB.',
       NSMicrophoneUsageDescription:
-        'mobile_webcam uses the microphone to stream audio to your computer over USB.',
-      // Required even over USB: binding a TCP listener triggers the Local Network
-      // prompt, and denying it makes the server silently fail to bind. docs/02 §3.2.
+        'webcamo uses the microphone to stream audio to your computer over USB.',
       NSLocalNetworkUsageDescription:
-        'mobile_webcam runs a local server so your computer can read the camera over the USB cable.',
+        'webcamo runs a local server so your computer can read the camera over the USB cable.',
       UIBackgroundModes: ['audio'],
       UIFileSharingEnabled: false,
       ITSAppUsesNonExemptEncryption: false,
     },
   },
+  android: {
+    package: 'com.mobilewebcam.app',
+    permissions: [
+      'android.permission.CAMERA',
+      'android.permission.RECORD_AUDIO',
+      'android.permission.INTERNET',
+      'android.permission.WAKE_LOCK',
+      'android.permission.FOREGROUND_SERVICE',
+      'android.permission.FOREGROUND_SERVICE_CAMERA',
+      'android.permission.FOREGROUND_SERVICE_MICROPHONE',
+    ],
+  },
   plugins: [
-    ['expo-build-properties', { ios: { deploymentTarget: '16.4' } }],
+    [
+      'expo-build-properties',
+      {
+        ios: { deploymentTarget: '16.4' },
+        android: {
+          minSdkVersion: 26,
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
+        },
+      },
+    ],
     './modules/webcam-server/plugin',
     'expo-router',
     'expo-secure-store',

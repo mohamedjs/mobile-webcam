@@ -1,8 +1,12 @@
 node_modules/
 dist/
+_site/
 *.tsbuildinfo
 .env
 .env.local
 coverage/
-android/
+/android/
+mobile/android/
+!mobile/modules/webcam-server/android/
 .expo/
+

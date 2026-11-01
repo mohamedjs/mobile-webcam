@@ -1,0 +1,30 @@
+# Homebrew Cask for Webcamo
+#   brew install --cask mohamedjs/webcamo/webcamo
+cask "webcamo" do
+  arch arm: "arm64", intel: "x86_64"
+
+  version "@VERSION@"
+  sha256 arm:   "@SHA_ARM64@",
+         intel: "@SHA_X86_64@"
+
+  url "https://github.com/mohamedjs/mobile-webcam/releases/download/v#{version}/Webcamo-#{version}-macos-#{arch}.zip"
+  name "Webcamo"
+  desc "Turn your iPhone or Android phone into a studio webcam over USB"
+  homepage "https://github.com/mohamedjs/mobile-webcam"
+
+  depends_on macos: ">= :monterey"
+  depends_on formula: "node"
+  depends_on formula: "ffmpeg"
+
+  app "Webcamo.app"
+  binary "#{appdir}/Webcamo.app/Contents/MacOS/webcamo"
+
+  postflight do
+    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Webcamo.app"]
+  end
+
+  zap trash: [
+    "~/Library/Application Support/Webcamo",
+    "~/Library/Logs/Webcamo",
+  ]
+end

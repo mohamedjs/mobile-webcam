@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "main": "./dist/main.js",
+  "bin": {
+    "webcamo": "./dist/main.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json && mkdir -p dist/modules/api/static && cp -r src/modules/api/static/. dist/modules/api/static/",
     "typecheck": "tsc -p tsconfig.json --noEmit",

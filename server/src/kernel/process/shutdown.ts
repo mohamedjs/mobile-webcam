@@ -42,7 +42,7 @@ export class ShutdownCoordinator {
   }
 
   install(onDone: () => void = () => process.exit(0)): void {
-    for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
       process.once(signal, () => {
         void this.shutdown(signal).then(onDone);
       });

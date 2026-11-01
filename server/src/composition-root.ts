@@ -10,6 +10,8 @@ import { AudioDeviceModule } from './modules/audio-device/index.js';
 import { PipelineModule } from './modules/pipeline/index.js';
 import { TelemetryModule } from './modules/telemetry/index.js';
 import { ApiModule } from './modules/api/index.js';
+import { WindowModule } from './modules/window/index.js';
+import { defaultPaths } from './kernel/platform/paths.js';
 
 export interface App {
   log: Logger;
@@ -23,6 +25,7 @@ export interface App {
   pipeline: PipelineModule;
   telemetry: TelemetryModule;
   api: ApiModule;
+  window: WindowModule;
   shutdown: ShutdownCoordinator;
 }
 
@@ -37,6 +40,7 @@ export function buildApp(configModule: ConfigModule, config: AppConfig, log: Log
   const tunnel = new TunnelModule({ log, bus, config });
   const video = new VideoDeviceModule({ log, bus, config });
   const audio = new AudioDeviceModule({ log, bus, config });
+  const window = new WindowModule({ log, dataDir: defaultPaths().dataDir });
 
   const control = new DeviceControlModule({
     log,
@@ -57,7 +61,7 @@ export function buildApp(configModule: ConfigModule, config: AppConfig, log: Log
 
   return {
     log, bus, config: configModule,
-    discovery, tunnel, control, video, audio, pipeline, telemetry, api, shutdown,
+    discovery, tunnel, control, video, audio, pipeline, telemetry, api, window, shutdown,
   };
 }
 

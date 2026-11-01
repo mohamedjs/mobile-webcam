@@ -3,6 +3,8 @@ export interface Device {
   name: string;
   model: string;
   ios: string;
+  platform?: 'ios' | 'android';
+  osVersion?: string;
 }
 
 /** Port the domain depends on; adapters implement it. */

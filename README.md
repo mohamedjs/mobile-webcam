@@ -65,6 +65,7 @@ compiler diagnostics on the first pass — it has only been checked statically.
 | [07-roadmap.md](docs/07-roadmap.md) | Phased delivery plan |
 | [08-running.md](docs/08-running.md) | **How to run it, and how to set up the iPhone app** |
 | [09-native-module.md](docs/09-native-module.md) | How the Swift module compiles and reaches JavaScript |
+| [10-production-handoff.md](docs/10-production-handoff.md) | **Production handoff spec: Expo 58, Android native module, macOS/Linux/Windows desktop app & landing page (Lura reference)** |
 
 **Implementers: read `00` and `01` before writing a single line.** `01` contains a
 directional constraint that, if violated, produces an architecture that cannot

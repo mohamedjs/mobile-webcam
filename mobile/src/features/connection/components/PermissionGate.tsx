@@ -1,17 +1,13 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Row, Badge } from '@/shared/ui';
 import { colors, font, space } from '@/shared/theme/tokens';
 import { usePermissions } from '../hooks/usePermissions';
 
-/**
- * Blocks streaming until permissions are granted, and names WHICH one is
- * missing. The Local Network case is the highest-value diagnostic in the app:
- * denied, the server fails to bind while the app still looks healthy, and the
- * desktop just sees "connection reset". docs/03 §6.
- */
 export function PermissionGate() {
   const { camera, microphone, allGranted, openSettings } = usePermissions();
   if (allGranted) return null;
+
+  const isAndroid = Platform.OS === 'android';
 
   return (
     <Card title="Permissions required">
@@ -22,8 +18,9 @@ export function PermissionGate() {
         <Badge label={microphone ? 'granted' : 'missing'} tone={microphone ? 'ok' : 'bad'} />
       </Row>
       <Text style={styles.note}>
-        If the server refuses to start, iOS has blocked the local network. Open
-        Settings → Privacy &amp; Security → Local Network and enable mobile_webcam.
+        {isAndroid
+          ? 'Enable Developer Options → USB Debugging on your Android phone and tap Allow when plugged into your computer.'
+          : 'If the server refuses to start, iOS has blocked the local network. Open Settings → Privacy & Security → Local Network and enable webcamo.'}
       </Text>
       <View style={styles.actions}>
         <Button title="Open Settings" variant="ghost" onPress={openSettings} />

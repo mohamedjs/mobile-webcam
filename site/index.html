@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webcamo — Turn Your Phone into a Studio Webcam over USB</title>
+  <meta name="description" content="Broadcast pristine 4K & 1080p60 video with ultra-low latency over USB cable. Works locally on Linux, macOS, and Windows with iOS and Android." />
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+  <link rel="stylesheet" href="./site.css" />
+  <script>
+    // Prevent theme flash
+    try {
+      const savedTheme = localStorage.getItem('webcamo-theme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      const savedLang = localStorage.getItem('webcamo-lang');
+      if (savedLang) {
+        document.documentElement.lang = savedLang;
+        document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+      }
+    } catch {}
+  </script>
+  <script src="./site.js" defer></script>
+</head>
+<body>
+  <div class="paper">
+    <!-- ── Header / Navigation ────────────────────────────────────────── -->
+    <header class="nav">
+      <a href="#" class="brand">
+        <div class="logo-icon">W</div>
+        <span>Web<span class="accent">camo</span></span>
+      </a>
+
+      <nav class="links">
+        <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#downloads" data-i18n="nav.download">Download</a>
+        <a href="#mobile" data-i18n="nav.mobile">Mobile Apps</a>
+        <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="btn-lang-toggle" class="btn ghost" title="Language">العربية</button>
+        <button id="btn-theme-toggle" class="icon-btn" title="Toggle theme">☀️</button>
+        <a href="https://github.com/mohamedjs/mobile-webcam" target="_blank" rel="noopener noreferrer" class="btn ghost" data-i18n="nav.github">GitHub</a>
+      </div>
+    </header>
+
+    <!-- ── Hero Section ──────────────────────────────────────────────── -->
+    <section class="hero">
+      <div>
+        <div class="tag" style="background: var(--accent-soft); color: var(--accent); margin-bottom: 16px;" data-i18n="hero.badge">
+          Zero Cloud · Hardware H.264 · 50ms Latency
+        </div>
+        <h1 data-i18n="hero.title">Turn your phone into a studio webcam over USB.</h1>
+        <p class="lead" data-i18n="hero.lead">
+          Broadcast pristine 4K & 1080p60 video with ultra-low latency. Hardware encoded directly on your iPhone or Android, streamed over cable straight to Zoom, Meet, Teams, and OBS.
+        </p>
+
+        <div class="row">
+          <a id="hero-dl-btn" href="#downloads" class="btn primary big">
+            <span class="os-icon" data-os="windows"></span>
+            <span data-i18n="hero.download">Download for Desktop</span>
+          </a>
+          <a href="#downloads" class="btn big ghost" data-i18n="hero.other">Other platforms</a>
+        </div>
+
+        <p class="hint" data-i18n="hero.version">Version v0.1.0 · 100% Local & Free</p>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-preview-box">
+          <div class="hero-badge-live">
+            <span class="dot-rec"></span>
+            <span>LIVE 1080p60</span>
+          </div>
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85;">
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+            <circle cx="12" cy="13" r="3"/>
+          </svg>
+        </div>
+
+        <div class="spec-tags">
+          <span class="tag">4K / 1080p60</span>
+          <span class="tag">50ms Latency</span>
+          <span class="tag">USB 3.0</span>
+          <span class="tag">AAC Microphone</span>
+          <span class="tag">Portrait Blur</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Downloads Section ─────────────────────────────────────────── -->
+    <section id="downloads" class="section">
+      <h2 data-i18n="dl.title">Download Webcamo</h2>
+      <p class="sub" data-i18n="dl.sub">
+        Free, open source, and private. Connect with a USB cable for crystal-clear video and synchronized microphone.
+      </p>
+
+      <div class="grid3">
+        <!-- Windows -->
+        <div class="card platform" data-os-card="windows">
+          <div class="os-head">
+            <span class="os-icon win"></span>
+            <h3 data-i18n="dl.win.title">Windows</h3>
+            <span class="badge" data-i18n="dl.yours">Your Computer</span>
+          </div>
+          <p class="hint" data-i18n="dl.win.req">Windows 10 or 11 (64-bit)</p>
+          <a id="dl-win-setup" href="https://github.com/mohamedjs/mobile-webcam/releases" class="btn primary block">
+            <span data-i18n="dl.win.setup">Download Installer (.exe)</span>
+          </a>
+          <a id="dl-win-portable" href="https://github.com/mohamedjs/mobile-webcam/releases" class="btn ghost block">
+            <span data-i18n="dl.win.portable">Portable Zip (.zip)</span>
+          </a>
+          <div class="cmd">
+            <code>winget install mohamedjs.webcamo</code>
+            <button class="copy" data-i18n="dl.copy">Copy</button>
+          </div>
+          <p class="note" data-i18n="dl.win.note">Windows SmartScreen may prompt on new releases: click More info → Run anyway.</p>
+        </div>
+
+        <!-- macOS -->
+        <div class="card platform" data-os-card="macos">
+          <div class="os-head">
+            <span class="os-icon mac"></span>
+            <h3 data-i18n="dl.mac.title">macOS</h3>
+            <span class="badge" data-i18n="dl.yours">Your Computer</span>
+          </div>
+          <p class="hint" data-i18n="dl.mac.req">macOS 12 Monterey or later</p>
+          <a id="dl-mac-dmg" href="https://github.com/mohamedjs/mobile-webcam/releases" class="btn primary block">
+            <span data-i18n="dl.mac.dmg">Download for Mac (.dmg)</span>
+          </a>
+          <div class="cmd">
+            <code>brew install mohamedjs/tap/webcamo</code>
+            <button class="copy" data-i18n="dl.copy">Copy</button>
+          </div>
+          <p class="note">Native Camera Extension & OBS Virtual Camera compatible. Apple Silicon & Intel Universal binary.</p>
+        </div>
+
+        <!-- Linux -->
+        <div class="card platform" data-os-card="linux">
+          <div class="os-head">
+            <span class="os-icon linux"></span>
+            <h3 data-i18n="dl.linux.title">Linux</h3>
+            <span class="badge" data-i18n="dl.yours">Your Computer</span>
+          </div>
+          <p class="hint" data-i18n="dl.linux.req">Ubuntu, Debian, Fedora & Arch (64-bit)</p>
+          <a id="dl-linux-deb" href="https://github.com/mohamedjs/mobile-webcam/releases" class="btn primary block">
+            <span data-i18n="dl.linux.deb">Download .deb Package</span>
+          </a>
+          <a id="dl-linux-tar" href="https://github.com/mohamedjs/mobile-webcam/releases" class="btn ghost block">
+            <span data-i18n="dl.linux.tar">Universal Tarball (.tar.gz)</span>
+          </a>
+          <div class="cmd">
+            <code>sudo apt install ./webcamo_*_amd64.deb</code>
+            <button class="copy" data-i18n="dl.copy">Copy</button>
+          </div>
+          <p class="note" data-i18n="dl.linux.note">Creates virtual video device /dev/video9 via v4l2loopback and PipeWire mic.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Mobile Section ────────────────────────────────────────────── -->
+    <section id="mobile" class="section">
+      <h2 data-i18n="mobile.title">Companion Mobile Apps</h2>
+      <p class="sub" data-i18n="mobile.sub">
+        Runs locally on your phone. Hardware H.264 fMP4 encoder and high-performance camera server.
+      </p>
+
+      <div class="grid2">
+        <!-- Android -->
+        <div class="card platform" data-os-card="android">
+          <div class="os-head">
+            <span class="os-icon android"></span>
+            <h3 data-i18n="mobile.android.title">Android</h3>
+            <span class="badge" data-i18n="dl.yours">Your Phone</span>
+          </div>
+          <p class="hint" data-i18n="mobile.android.req">Android 8.0 (Oreo) or later (API 26+)</p>
+          <p data-i18n="mobile.android.feat">Camera2 hardware encoder, zero-copy MediaCodec, USB Debugging (ADB forward).</p>
+          <a id="dl-android-apk" href="https://github.com/mohamedjs/mobile-webcam/releases" class="btn primary block">
+            <span data-i18n="mobile.android.apk">Download Android APK</span>
+          </a>
+          <p class="note">Enable USB Debugging in Developer Options on your phone, then plug in the cable.</p>
+        </div>
+
+        <!-- iOS -->
+        <div class="card platform" data-os-card="ios">
+          <div class="os-head">
+            <span class="os-icon apple"></span>
+            <h3 data-i18n="mobile.ios.title">iOS</h3>
+            <span class="badge" data-i18n="dl.yours">Your Phone</span>
+          </div>
+          <p class="hint" data-i18n="mobile.ios.req">iOS 16.4 or later</p>
+          <p data-i18n="mobile.ios.feat">AVFoundation 4K60, VideoToolbox hardware encoder, usbmuxd tunnel.</p>
+          <a href="https://github.com/mohamedjs/mobile-webcam" class="btn primary block">
+            <span data-i18n="mobile.ios.app">Download on App Store / TestFlight</span>
+          </a>
+          <p class="note">Plug iPhone into computer via Lightning or USB-C and tap Trust this computer.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Features Section ──────────────────────────────────────────── -->
+    <section id="features" class="section">
+      <h2 data-i18n="feat.title">Built for Broadcast Quality</h2>
+      <p class="sub" data-i18n="feat.sub">
+        Engineered without shortcuts. No flaky Wi-Fi, no battery overheating, and no cloud middlemen.
+      </p>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="feat-icon">⚡</div>
+          <h3 data-i18n="feat.1.t">Rock-Solid USB Cable</h3>
+          <p class="hint" data-i18n="feat.1.d">Direct host-to-device streaming over USB. No Wi-Fi congestion, no jitter, and phone stays charged during long meetings.</p>
+        </div>
+
+        <div class="card">
+          <div class="feat-icon">🔒</div>
+          <h3 data-i18n="feat.2.t">Zero Cloud, 100% Private</h3>
+          <p class="hint" data-i18n="feat.2.d">Runs purely on localhost (127.0.0.1). No analytics, no tracking, no external accounts, and no telemetry leaves your machine.</p>
+        </div>
+
+        <div class="card">
+          <div class="feat-icon">🎥</div>
+          <h3 data-i18n="feat.3.t">Hardware Video & Audio</h3>
+          <p class="hint" data-i18n="feat.3.d">Encodes in hardware on the phone (H.264/AAC fMP4) and writes to native virtual webcam and virtual microphone devices.</p>
+        </div>
+
+        <div class="card">
+          <div class="feat-icon">🎛️</div>
+          <h3 data-i18n="feat.4.t">Camera Controls in Real-Time</h3>
+          <p class="hint" data-i18n="feat.4.d">Switch lenses (Wide, Ultra-Wide, Telephoto), adjust zoom, exposure, bitrate, torch, and orientation live from your desktop.</p>
+        </div>
+
+        <div class="card">
+          <div class="feat-icon">✨</div>
+          <h3 data-i18n="feat.5.t">Background Blur & Bokeh</h3>
+          <p class="hint" data-i18n="feat.5.d">Built-in real-time person segmentation and cinematic depth blur with live intensity control.</p>
+        </div>
+
+        <div class="card">
+          <div class="feat-icon">🖥️</div>
+          <h3 data-i18n="feat.6.t">Chromeless Desktop App</h3>
+          <p class="hint" data-i18n="feat.6.d">Lightweight native desktop window powered by your system's browser runtime. Zero heavy Electron overhead.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FAQ Section ───────────────────────────────────────────────── -->
+    <section id="faq" class="section">
+      <h2 data-i18n="faq.title">Frequently Asked Questions</h2>
+      <div class="faq-list" style="margin-top: 36px;">
+        <details class="faq-item" open>
+          <summary data-i18n="faq.1.q">Why USB cable instead of Wi-Fi?</summary>
+          <div class="faq-ans" data-i18n="faq.1.a">
+            Wi-Fi connections suffer from packet loss, channel interference, and latency spikes. A USB cable guarantees continuous 50ms latency, zero dropped frames, and keeps your phone fully charged.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.2.q">Does Webcamo send any video or data to the cloud?</summary>
+          <div class="faq-ans" data-i18n="faq.2.a">
+            Never. Webcamo operates strictly over local loopback (127.0.0.1) between your phone and your computer. It requires zero internet access to stream.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.3.q">Will my phone overheat during long calls?</summary>
+          <div class="faq-ans" data-i18n="faq.3.a">
+            Webcamo utilizes dedicated on-chip hardware encoding (MediaCodec on Android, VideoToolbox on iOS) and automatically sleeps the phone screen while keeping the camera sensor active.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.4.q">Can I use the phone's microphone for meetings?</summary>
+          <div class="faq-ans" data-i18n="faq.4.a">
+            Yes! Webcamo captures synchronized high-fidelity AAC audio from your phone and registers a virtual microphone on your operating system (PipeWire on Linux, BlackHole on macOS, VB-Cable on Windows).
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.5.q">Which video apps are supported?</summary>
+          <div class="faq-ans" data-i18n="faq.5.a">
+            Because Webcamo exposes standard system virtual camera and audio devices, it works automatically in Google Meet, Zoom, Microsoft Teams, Discord, OBS Studio, and WebRTC browsers.
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ── Footer ────────────────────────────────────────────────────── -->
+    <footer>
+      <div>
+        <strong style="color: var(--ink);">Webcamo</strong> — <span data-i18n="foot.copy">Webcamo is open source under the MIT license.</span>
+      </div>
+      <div data-i18n="foot.made">Crafted for privacy, quality, and simplicity.</div>
+    </footer>
+  </div>
+</body>
+</html>

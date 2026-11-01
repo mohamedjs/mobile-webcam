@@ -34,7 +34,12 @@ export class AudioDeviceModule {
     return `${this.sinkName}.monitor`;
   }
 
+  get sourceName(): string {
+    return `${this.sinkName}_source`;
+  }
+
   async exists(): Promise<boolean> {
+    if (process.platform !== 'linux') return true;
     try {
       const { stdout } = await run('pactl', ['list', 'short', 'sinks'], { timeout: 5000 });
       return stdout.split('\n').some((l) => l.includes(this.sinkName));
@@ -43,9 +48,25 @@ export class AudioDeviceModule {
     }
   }
 
+  async existsSource(): Promise<boolean> {
+    if (process.platform !== 'linux') return true;
+    try {
+      const { stdout } = await run('pactl', ['list', 'short', 'sources'], { timeout: 5000 });
+      return stdout.split('\n').some((l) => l.includes(this.sourceName));
+    } catch {
+      return false;
+    }
+  }
+
   async ensure(): Promise<void> {
+    if (process.platform !== 'linux') {
+      this.#bus.emit({ type: 'audio.sink.ready', sinkName: this.sinkName, moduleId: -1 });
+      this.#log.info({ sink: this.sinkName }, 'audio device ready (virtual)');
+      return;
+    }
     if (await this.exists()) {
       this.#log.info({ sink: this.sinkName }, 'sink already present');
+      await this.#ensureSource();
       this.#bus.emit({ type: 'audio.sink.ready', sinkName: this.sinkName, moduleId: -1 });
       return;
     }
@@ -62,6 +83,7 @@ export class AudioDeviceModule {
       );
       this.#ownedModuleId = Number.parseInt(stdout.trim(), 10);
       this.#log.info({ sink: this.sinkName, moduleId: this.#ownedModuleId }, 'sink created');
+      await this.#ensureSource();
       this.#bus.emit({
         type: 'audio.sink.ready',
         sinkName: this.sinkName,
@@ -76,8 +98,29 @@ export class AudioDeviceModule {
     }
   }
 
+  async #ensureSource(): Promise<void> {
+    if (process.platform !== 'linux') return;
+    if (await this.existsSource()) return;
+    try {
+      const { stdout } = await run(
+        'pactl',
+        [
+          'load-module', 'module-remap-source',
+          `master=${this.sinkName}.monitor`,
+          `source_name=${this.sourceName}`,
+          `source_properties=device.description=Mobile_Webcam_Microphone`,
+        ],
+        { timeout: 5000 },
+      );
+      this.#log.info({ source: this.sourceName, moduleId: stdout.trim() }, 'remap source created for OBS');
+    } catch (err) {
+      this.#log.warn({ err }, 'failed to create remap source for mic');
+    }
+  }
+
   /** Unload only what we loaded — otherwise duplicate sinks pile up per restart. */
   async release(): Promise<void> {
+    if (process.platform !== 'linux') return;
     if (this.#ownedModuleId === null) return;
     try {
       await run('pactl', ['unload-module', String(this.#ownedModuleId)], { timeout: 5000 });

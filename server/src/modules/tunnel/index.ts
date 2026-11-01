@@ -1,81 +1,68 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { ManagedProcess } from '../../kernel/process/ManagedProcess.js';
 import type { EventBus } from '../../kernel/events/EventBus.js';
 import type { Logger } from '../../kernel/logging/logger.js';
 import type { AppConfig } from '../config/index.js';
+import type { Device } from '../discovery/index.js';
+import { IproxyTunnel } from './infrastructure/IproxyTunnel.js';
+import { AdbTunnel } from './infrastructure/AdbTunnel.js';
 
-const run = promisify(execFile);
+export { IproxyTunnel, AdbTunnel };
 
-/**
- * Owns the iproxy process. Nothing else may spawn one.
- *
- * iproxy binds LOCAL and forwards to DEVICE. The direction is fixed by usbmuxd:
- * host→device only. See docs/01 §2.
- */
 export class TunnelModule {
   readonly #log: Logger;
   readonly #bus: EventBus;
   readonly #config: AppConfig;
-  #proc: ManagedProcess | null = null;
-  #open = false;
+  readonly #iproxy: IproxyTunnel;
+  readonly #adb: AdbTunnel;
+  #currentMode: 'iproxy' | 'adb' | null = null;
 
   constructor(deps: { log: Logger; bus: EventBus; config: AppConfig }) {
     this.#log = deps.log.child({ module: 'tunnel' });
     this.#bus = deps.bus;
     this.#config = deps.config;
+    this.#iproxy = new IproxyTunnel(this.#log);
+    this.#adb = new AdbTunnel(this.#log);
   }
 
   get isOpen(): boolean {
-    return this.#open;
+    return this.#iproxy.isOpen || this.#adb.isOpen;
   }
 
   get baseUrl(): string {
     return `http://127.0.0.1:${this.#config.localPort}`;
   }
 
-  async open(): Promise<void> {
-    if (this.#proc) return;
-
-    // A previous instance still holding the port makes iproxy exit with
-    // "bind(): Address already in use" — clear it before spawning. docs/06 §4.
-    await this.#killStale();
+  async open(device?: Device | null): Promise<void> {
+    if (this.isOpen) return;
 
     const { localPort, devicePort } = this.#config;
-    this.#proc = new ManagedProcess({
-      name: 'iproxy',
-      command: 'iproxy',
-      args: [String(localPort), String(devicePort)],
-      log: this.#log,
-      healthyAfterMs: 3000,
-      onStarted: () => {
-        this.#open = true;
+    const isAndroid = device?.platform === 'android';
+
+    if (isAndroid) {
+      this.#currentMode = 'adb';
+      try {
+        await this.#adb.open(localPort, devicePort, device?.udid);
         this.#bus.emit({ type: 'tunnel.opened', localPort, devicePort });
-      },
-      onGaveUp: (reason) => {
-        this.#open = false;
-        this.#log.error({ reason }, 'tunnel gave up');
-        this.#bus.emit({ type: 'tunnel.failed', error: reason });
-      },
-    });
-    this.#proc.start();
+      } catch (err: any) {
+        this.#bus.emit({ type: 'tunnel.failed', error: String(err) });
+      }
+    } else {
+      this.#currentMode = 'iproxy';
+      await this.#iproxy.open(
+        localPort,
+        devicePort,
+        () => this.#bus.emit({ type: 'tunnel.opened', localPort, devicePort }),
+        (error) => this.#bus.emit({ type: 'tunnel.failed', error }),
+      );
+    }
   }
 
   async close(reason = 'requested'): Promise<void> {
-    if (!this.#proc) return;
-    await this.#proc.stop();
-    this.#proc = null;
-    this.#open = false;
-    this.#bus.emit({ type: 'tunnel.closed', reason });
-  }
-
-  async #killStale(): Promise<void> {
-    try {
-      await run('pkill', ['-f', `iproxy ${this.#config.localPort} `], { timeout: 3000 });
-      this.#log.debug('killed a stale iproxy');
-      await new Promise((r) => setTimeout(r, 200));
-    } catch {
-      // pkill exits non-zero when nothing matched — the normal case.
+    if (this.#currentMode === 'adb') {
+      await this.#adb.close();
+    } else {
+      await this.#iproxy.close();
     }
+    this.#currentMode = null;
+    this.#bus.emit({ type: 'tunnel.closed', reason });
   }
 }

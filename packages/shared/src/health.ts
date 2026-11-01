@@ -10,6 +10,8 @@ export const HealthSchema = z.object({
   device: z.object({
     model: z.string(),
     ios: z.string(),
+    platform: z.enum(['ios', 'android']).optional().default('ios'),
+    osVersion: z.string().optional(),
     name: z.string(),
   }),
   streaming: z.boolean(),

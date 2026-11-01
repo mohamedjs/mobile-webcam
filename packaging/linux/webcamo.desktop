@@ -1,0 +1,21 @@
+[Desktop Entry]
+Type=Application
+Name=Webcamo
+GenericName=USB Webcam
+Comment=Turn your iPhone or Android phone into a studio webcam over USB
+Exec=/opt/webcamo/webcamo dashboard
+Icon=webcamo
+Terminal=false
+Categories=AudioVideo;Video;Recorder;
+Keywords=webcam;camera;v4l2;usb;streaming;
+StartupNotify=false
+StartupWMClass=webcamo
+Actions=Dashboard;Doctor;
+
+[Desktop Action Dashboard]
+Name=Open Dashboard
+Exec=/opt/webcamo/webcamo dashboard
+
+[Desktop Action Doctor]
+Name=Run Diagnostics
+Exec=/opt/webcamo/webcamo doctor

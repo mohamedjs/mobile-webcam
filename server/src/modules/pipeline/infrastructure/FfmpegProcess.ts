@@ -7,8 +7,9 @@ export interface FfmpegStats {
   droppedFrames: number;
 }
 
-/** ffmpeg's -stats line, e.g. "frame= 900 fps= 30 q=-0.0 size=... bitrate=8000.0kbits/s drop=2" */
-const STATS = /fps=\s*([\d.]+).*?bitrate=\s*([\d.]+)kbits\/s/;
+/** ffmpeg's -stats line, e.g. "frame= 900 fps= 30 q=-0.0 size=... bitrate=N/A drop=2" */
+const FPS_RE = /fps=\s*([\d.]+)/;
+const BITRATE_RE = /bitrate=\s*([\d.]+)kbits\/s/;
 const DROP = /drop=\s*(\d+)/;
 
 export class FfmpegProcess {
@@ -64,11 +65,10 @@ export class FfmpegProcess {
   }
 
   #parseStats(line: string): void {
-    const m = STATS.exec(line);
-    if (m) {
-      this.#stats.fps = Number.parseFloat(m[1] ?? '0');
-      this.#stats.bitrateKbits = Number.parseFloat(m[2] ?? '0');
-    }
+    const f = FPS_RE.exec(line);
+    if (f) this.#stats.fps = Number.parseFloat(f[1] ?? '0');
+    const b = BITRATE_RE.exec(line);
+    if (b) this.#stats.bitrateKbits = Number.parseFloat(b[1] ?? '0');
     const d = DROP.exec(line);
     if (d) this.#stats.droppedFrames = Number.parseInt(d[1] ?? '0', 10);
 

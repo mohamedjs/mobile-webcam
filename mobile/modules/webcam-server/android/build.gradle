@@ -1,0 +1,32 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.webcamserver'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.webcamserver"
+  compileSdkVersion 35
+
+  defaultConfig {
+    minSdkVersion 26
+    targetSdkVersion 35
+    versionCode 1
+    versionName "1.0.0"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+}
+
+dependencies {
+  implementation project(':expo-modules-core')
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+}

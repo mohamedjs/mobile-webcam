@@ -1,6 +1,10 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { ManagedProcess } from '../../../kernel/process/ManagedProcess.js';
 import type { Logger } from '../../../kernel/logging/logger.js';
 import { buildPlaceholderArgs } from '../domain/FfmpegArgs.js';
+
+const run = promisify(execFile);
 
 /**
  * Feeds colour bars into the V4L2 device while the phone is unavailable.
@@ -36,9 +40,12 @@ export class PlaceholderFeed {
   }
 
   async stop(): Promise<void> {
-    if (!this.#proc) return;
-    await this.#proc.stop();
-    this.#proc = null;
-    this.#log.info('placeholder stopped');
+    if (this.#proc) {
+      await this.#proc.stop();
+      this.#proc = null;
+      this.#log.info('placeholder stopped');
+    }
+    // Clean up any orphaned placeholder ffmpeg from a previously killed server instance
+    await run('pkill', ['-9', '-f', 'ffmpeg.*smptebars']).catch(() => {});
   }
 }

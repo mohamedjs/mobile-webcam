@@ -25,6 +25,7 @@ export class VideoDeviceModule {
   }
 
   async exists(): Promise<boolean> {
+    if (process.platform !== 'linux') return true;
     try {
       await access(this.path);
       return true;
@@ -34,6 +35,7 @@ export class VideoDeviceModule {
   }
 
   async label(): Promise<string | null> {
+    if (process.platform !== 'linux') return 'Webcamo Virtual Camera';
     try {
       const raw = await readFile(
         `/sys/devices/virtual/video4linux/video${this.#config.video.deviceNr}/name`,
@@ -52,6 +54,11 @@ export class VideoDeviceModule {
    * service that silently sudo's is worse than one that tells you to run setup.
    */
   async ensure(): Promise<void> {
+    if (process.platform !== 'linux') {
+      this.#bus.emit({ type: 'video.device.ready', path: this.path, label: 'Webcamo Virtual Camera' });
+      this.#log.info({ path: this.path, label: 'Webcamo Virtual Camera' }, 'video device ready (virtual)');
+      return;
+    }
     if (!(await this.exists())) {
       throw new AppError({
         code: 'video_device_unavailable',
@@ -81,6 +88,7 @@ export class VideoDeviceModule {
    * one.
    */
   async actualFormat(): Promise<{ width: number; height: number } | null> {
+    if (process.platform !== 'linux') return null;
     try {
       const { stdout } = await run('v4l2-ctl', ['-d', this.path, '--get-fmt-video'], {
         timeout: 5000,
@@ -102,6 +110,7 @@ export class VideoDeviceModule {
    * it for writing. Pinning caps makes every restart deterministic. docs/06 §2.3.
    */
   async pinCaps(width: number, height: number, fps: number): Promise<void> {
+    if (process.platform !== 'linux') return;
     // Must match what ffmpeg writes — see V4L2_PIXEL_FORMAT.
     const caps = `${V4L2_PIXEL_FORMAT.fourcc}:${width}x${height}@${fps}`;
     try {
@@ -135,6 +144,7 @@ export class VideoDeviceModule {
     fps: number,
     attempts = 6,
   ): Promise<{ width: number; height: number } | null> {
+    if (process.platform !== 'linux') return { width, height };
     for (let i = 0; i < attempts; i++) {
       await this.pinCaps(width, height, fps);
       const actual = await this.actualFormat();

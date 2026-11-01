@@ -29,11 +29,14 @@ export class LibimobiledeviceAdapter implements DevicePort {
         return fallback;
       }
     };
+    const osVer = await key('ProductVersion', 'unknown');
     return {
       udid,
       name: await key('DeviceName', 'iPhone'),
       model: await key('ProductType', 'unknown'),
-      ios: await key('ProductVersion', 'unknown'),
+      ios: osVer,
+      platform: 'ios',
+      osVersion: osVer,
     };
   }
 }

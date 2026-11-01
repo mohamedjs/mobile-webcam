@@ -88,11 +88,20 @@ export class ManagedProcess {
       this.#log.debug({ stream: 'stdout' }, line);
       this.#opts.onStdoutLine?.(line);
     });
-    createInterface({ input: child.stderr }).on('line', (line) => {
-      this.#log.debug({ stream: 'stderr' }, line);
-      this.#recentStderr.push(line);
-      if (this.#recentStderr.length > 10) this.#recentStderr.shift();
-      this.#opts.onStderrLine?.(line);
+    let stderrBuf = '';
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (chunk: string) => {
+      stderrBuf += chunk;
+      const parts = stderrBuf.split(/\r\n|\r|\n/);
+      stderrBuf = parts.pop() ?? '';
+      for (const raw of parts) {
+        const line = raw.trim();
+        if (!line) continue;
+        this.#log.debug({ stream: 'stderr' }, line);
+        this.#recentStderr.push(line);
+        if (this.#recentStderr.length > 10) this.#recentStderr.shift();
+        this.#opts.onStderrLine?.(line);
+      }
     });
 
     child.on('spawn', () => {
