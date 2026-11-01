@@ -134,3 +134,7 @@ When applying this skill to any project:
 4. **Create the Landing Page (`site/` + `.github/workflows/pages.yml`):**
    - Create `site/{index.html,site.css,site.js,build.sh}` and `.github/workflows/pages.yml`.
    - Run `bash site/build.sh` to verify `_site/` builds cleanly.
+5. **Create Bilingual Marketing Video (`remotion-video-studio`):**
+   - Use the shared Remotion studio at `/var/www/html/old/remotion` (`@remotion/transitions`, `@remotion/sfx`, `@remotion/media`) to generate `intro-en.mp4`, `intro-ar.mp4`, `intro-en.jpg`, and `intro-ar.jpg` into `site/assets/` and wire them into the landing page.
+   - See [../remotion-video-studio/SKILL.md](../remotion-video-studio/SKILL.md) for full details.
+
