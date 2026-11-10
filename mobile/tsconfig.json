@@ -4,7 +4,9 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mobile-webcam/shared": ["../packages/shared/src/index.ts"],
+      "zod": ["./node_modules/zod"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
