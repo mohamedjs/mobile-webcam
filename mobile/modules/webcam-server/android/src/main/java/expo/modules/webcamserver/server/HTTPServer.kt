@@ -33,7 +33,10 @@ class HTTPServer {
   fun start(port: Int) {
     stop()
     try {
-      val socket = ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"))
+      // Loopback only. `adb forward` delivers to the device's localhost, so USB
+      // keeps working, and with auth disabled for USB this is what stops anyone
+      // on the same Wi-Fi from opening the camera stream.
+      val socket = ServerSocket(port, 50, InetAddress.getLoopbackAddress())
       serverSocket = socket
       running = true
       Log.info("HTTPServer listening on port $port")

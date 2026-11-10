@@ -30,6 +30,25 @@ export interface ApiDeps {
   telemetry: TelemetryModule;
 }
 
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+/**
+ * True when a request targets this loopback API and, if sent by a browser,
+ * comes from the control UI's own origin. Non-browser clients (curl, the CLI)
+ * send no Origin header and are allowed.
+ */
+export function isAllowedLocalRequest(
+  host: string | undefined,
+  origin: string | undefined,
+  port: number,
+): boolean {
+  if (!host) return false;
+  const allowedHosts = [...LOOPBACK_HOSTS].map((h) => `${h}:${port}`);
+  if (!allowedHosts.includes(host.toLowerCase())) return false;
+  if (origin === undefined) return true;
+  return allowedHosts.some((h) => origin.toLowerCase() === `http://${h}`);
+}
+
 export class ApiModule {
   readonly #app: FastifyInstance;
   readonly #deps: ApiDeps;
@@ -42,6 +61,16 @@ export class ApiModule {
   }
 
   async start(port: number): Promise<void> {
+    // Binding to loopback is not enough on its own: any web page open in the
+    // user's browser can still send simple POSTs (CSRF), open the WebSocket
+    // (no CORS on WS), or read responses via DNS rebinding. Accept only
+    // requests addressed to a loopback host, and only same-origin browsers.
+    this.#app.addHook('onRequest', async (req, reply) => {
+      if (!isAllowedLocalRequest(req.headers.host, req.headers.origin, port)) {
+        return reply.code(403).send({ error: 'forbidden', message: 'Cross-origin request rejected' });
+      }
+    });
+
     await this.#app.register(fastifyWebsocket);
 
     const here =

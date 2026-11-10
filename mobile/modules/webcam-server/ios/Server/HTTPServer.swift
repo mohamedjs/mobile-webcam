@@ -46,7 +46,11 @@ final class HTTPServer {
       throw ServerError.invalidPort(port)
     }
 
-    let listener = try NWListener(using: params, on: nwPort)
+    // Loopback only. usbmuxd (iproxy) delivers USB connections to the device's
+    // localhost, so the cable keeps working; with auth disabled for USB, this is
+    // what stops anyone on the same Wi-Fi from opening the camera stream.
+    params.requiredLocalEndpoint = NWEndpoint.hostPort(host: .ipv4(.loopback), port: nwPort)
+    let listener = try NWListener(using: params)
     listener.newConnectionHandler = { [weak self] connection in
       self?.accept(connection)
     }

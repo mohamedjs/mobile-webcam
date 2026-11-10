@@ -127,6 +127,20 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(`Usage: webcamo [command] [options]
+
+Commands:
+  run        Start the daemon and open the control window (default)
+  doctor     Check the host for iproxy, adb, ffmpeg, video and audio devices
+
+Options:
+  --no-window, --headless   Start without opening the desktop window
+  -v, --version             Print the version
+  -h, --help                Show this help`);
+    process.exit(0);
+  }
+
   // Bootstrap logger before config is readable
   const bootLog = createLogger({ level: 'info', pretty: process.stdout.isTTY });
   const bootBus = new EventBus(bootLog);

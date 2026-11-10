@@ -406,11 +406,28 @@ async function refresh() {
 refresh();
 setInterval(refresh, 1000);
 
-// Server-sent events, when the API offers them.
-try {
-  const es = new EventSource('/api/events');
-  es.onmessage = (m) => log(m.data);
-} catch {}
+// Live events pushed by the server over /api/ws (see ws.routes.ts).
+// Telemetry samples arrive every second and are already painted by polling,
+// so only state changes, device, error and degrade events go to the log.
+function connectEvents(delay = 1000) {
+  let ws;
+  try {
+    ws = new WebSocket(`ws://${location.host}/api/ws`);
+  } catch { return setTimeout(() => connectEvents(Math.min(delay * 2, 15000)), delay); }
+  ws.onopen = () => { delay = 1000; };
+  ws.onmessage = (m) => {
+    let e; try { e = JSON.parse(m.data); } catch { return; }
+    switch (e.type) {
+      case 'state': if (e.from) log(`state ${e.from} → ${e.to}`); break;
+      case 'device': log(e.connected ? `phone connected: ${e.name ?? ''} ${e.model ?? ''}`.trim() : 'phone disconnected'); break;
+      case 'error': log(`error ${e.code}: ${e.message}`); break;
+      case 'degraded': log(`degraded: ${e.reason} (${e.action})`); break;
+      case 'settings': refresh(); break;
+    }
+  };
+  ws.onclose = () => setTimeout(() => connectEvents(Math.min(delay * 2, 15000)), delay);
+}
+connectEvents();
 </script>
 </body>
 </html>
