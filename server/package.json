@@ -8,7 +8,7 @@
     "webcamo": "./dist/main.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && mkdir -p dist/modules/api/static dist/static && cp -r src/modules/api/static/. dist/modules/api/static/ && cp -r src/modules/api/static/. dist/static/ && ../node_modules/.bin/esbuild src/main.ts --bundle --platform=node --target=node20 --format=cjs --log-override:empty-import-meta=silent --outfile=dist/webcamo-bundle.cjs",
+    "build": "tsc -p tsconfig.json && node scripts/bundle.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
