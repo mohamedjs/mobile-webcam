@@ -37,6 +37,23 @@ jobs:
         run: |
           bash packaging/linux/build-deb.sh 0.1.0 amd64
 
+  # Same build the Windows release runs, without publishing anything.
+  windows-package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and package
+        shell: bash
+        run: |
+          npm ci
+          npm run build --workspace=@mobile-webcam/shared
+          npm run build --workspace=@mobile-webcam/server
+          node server/dist/webcamo-bundle.cjs --version
+          bash packaging/windows/build-win.sh 0.0.0-ci
+
   mobile-app:
     runs-on: ubuntu-latest
     steps:
