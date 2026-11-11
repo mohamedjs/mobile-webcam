@@ -45,10 +45,11 @@ const config: ExpoConfig = {
       'expo-build-properties',
       {
         ios: { deploymentTarget: '16.4' },
+        // compileSdk / targetSdk come from React Native's defaults (37 / 36).
+        // Pinning them lower breaks AAR metadata checks for current libraries
+        // (react-native-screens) and falls behind Play's target-API rule.
         android: {
           minSdkVersion: 26,
-          compileSdkVersion: 35,
-          targetSdkVersion: 35,
         },
       },
     ],

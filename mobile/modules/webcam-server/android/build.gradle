@@ -7,11 +7,12 @@ version = '1.0.0'
 
 android {
   namespace "expo.modules.webcamserver"
-  compileSdkVersion 35
+  // SDK levels follow the app (expo-module-gradle-plugin provides the defaults).
+  compileSdkVersion rootProject.ext.has("compileSdkVersion") ? rootProject.ext.compileSdkVersion : 36
 
   defaultConfig {
     minSdkVersion 26
-    targetSdkVersion 35
+    targetSdkVersion rootProject.ext.has("targetSdkVersion") ? rootProject.ext.targetSdkVersion : 36
     versionCode 1
     versionName "1.0.0"
   }
