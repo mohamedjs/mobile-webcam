@@ -40,6 +40,8 @@ export const CapabilitiesSchema = z.object({
   stabilization: z.array(StabilizationSchema),
   hdr: z.boolean(),
   audio: z.object({
+    /** false on phones that cannot capture audio yet (Android). Absent means true. */
+    supported: z.boolean().optional(),
     sampleRates: z.array(z.number().int().positive()),
     maxChannels: z.number().int().positive(),
   }),

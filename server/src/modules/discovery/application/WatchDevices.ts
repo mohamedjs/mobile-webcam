@@ -74,6 +74,7 @@ export class WatchDevices {
         name: device.name,
         model: device.model,
         ios: device.ios,
+        ...(device.platform ? { platform: device.platform } : {}),
       });
     } catch (e) {
       this.#log.error({ err: e }, 'device poll failed');

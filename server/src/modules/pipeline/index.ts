@@ -1,4 +1,10 @@
-import type { Health, PipelineState, SettingsPatch, StreamProfile } from '@mobile-webcam/shared';
+import {
+  requiresRestart,
+  type PipelineState,
+  type Settings,
+  type SettingsPatch,
+  type StreamProfile,
+} from '@mobile-webcam/shared';
 import type { EventBus } from '../../kernel/events/EventBus.js';
 import type { Logger } from '../../kernel/logging/logger.js';
 import { AppError } from '../../kernel/errors/AppError.js';
@@ -16,6 +22,12 @@ export { buildFfmpegArgs, buildPlaceholderArgs } from './domain/FfmpegArgs.js';
 
 /** Consecutive ffmpeg failures before the pipeline stops retrying. */
 const MAX_FFMPEG_RETRIES = 5;
+/** How long a phone gets to bring its camera back after a restart. */
+const CAPTURE_WAIT_MS = 8000;
+/** Minimum gap between two automatic quality reductions. */
+const DEGRADE_COOLDOWN_MS = 30_000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Owns the state machine and the ffmpeg process. Nothing else may spawn ffmpeg —
@@ -32,6 +44,7 @@ export class PipelineModule {
   readonly #ffmpeg: FfmpegProcess;
   readonly #placeholder: PlaceholderFeed;
   readonly #streamProxy: StreamProxy;
+  readonly #outputPlatform: 'linux' | 'darwin' | 'win32' | undefined;
 
   #state: PipelineState = 'NO_DEVICE';
   #degraded = false;
@@ -39,6 +52,13 @@ export class PipelineModule {
   #ffmpegRetries = 0;
   #resumeTimer: NodeJS.Timeout | null = null;
   #atQualityFloor = false;
+  /** Bumped for every ffmpeg run; exits from older runs are ignored. */
+  #generation = 0;
+  #platform: 'ios' | 'android' = 'ios';
+  #udid: string | undefined;
+  /** Quality before the first automatic reduction, restored when it cools down. */
+  #preDegrade: Pick<Settings, 'resolution' | 'fps' | 'bitrate'> | null = null;
+  #lastDegradeAt = 0;
 
   constructor(deps: {
     log: Logger;
@@ -48,6 +68,8 @@ export class PipelineModule {
     control: DeviceControlModule;
     video: VideoDeviceModule;
     audio: AudioDeviceModule;
+    /** Override the output platform (tests write to a null sink). */
+    outputPlatform?: 'linux' | 'darwin' | 'win32';
   }) {
     this.#log = deps.log.child({ module: 'pipeline' });
     this.#bus = deps.bus;
@@ -56,17 +78,23 @@ export class PipelineModule {
     this.#control = deps.control;
     this.#video = deps.video;
     this.#audio = deps.audio;
+    this.#outputPlatform = deps.outputPlatform;
     this.#ffmpeg = new FfmpegProcess({ log: this.#log });
     this.#placeholder = new PlaceholderFeed({ log: this.#log });
     this.#streamProxy = new StreamProxy({ log: this.#log });
 
-    this.#bus.on('device.connected', () => void this.#onDeviceConnected());
+    this.#bus.on('device.connected', (e) => {
+      this.#platform = e.platform ?? 'ios';
+      this.#udid = e.udid;
+      void this.#onDeviceConnected();
+    });
     this.#bus.on('device.disconnected', () => void this.#onDeviceDisconnected());
   }
 
   get state(): PipelineState { return this.#state; }
   get degraded(): boolean { return this.#degraded; }
   get ffmpegStats() { return this.#ffmpeg.stats; }
+  get platform(): 'ios' | 'android' { return this.#platform; }
 
   get profile(): StreamProfile {
     return this.#config.forceMjpeg ? 'mjpeg' : 'fmp4';
@@ -89,7 +117,7 @@ export class PipelineModule {
   async #onDeviceConnected(): Promise<void> {
     try {
       this.#transition('TUNNELING');
-      await this.#tunnel.open();
+      await this.#tunnel.open({ platform: this.#platform, udid: this.#udid ?? '' });
       await this.#control.waitForReady();
       this.#transition('READY');
       if (this.#config.autoStart) await this.start();
@@ -106,7 +134,8 @@ export class PipelineModule {
   }
 
   async #onDeviceDisconnected(): Promise<void> {
-    await this.#ffmpeg.stop();
+    this.#clearResumeWatch();
+    await this.#stopFfmpeg();
     await this.#tunnel.close('device disconnected');
     this.#control.invalidate();
     await this.#fallBackToNoDevice();
@@ -161,7 +190,11 @@ export class PipelineModule {
       settings.resolution.height,
       settings.fps,
     );
-    await this.#audio.ensure();
+
+    // Audio only when the phone can actually send it (Android cannot yet).
+    const audioSupported = this.#control.capabilities?.audio.supported !== false;
+    const withAudio = settings.audio.enabled && audioSupported && this.profile === 'fmp4';
+    if (withAudio) await this.#audio.ensure();
 
     // Scale to what the device REALLY is, not what we asked for. A mismatch
     // does not error — it shears the picture. docs/08 §7.2c.
@@ -173,9 +206,13 @@ export class PipelineModule {
       );
     }
 
+    const generation = ++this.#generation;
     let baseUrl = this.#tunnel.baseUrl;
     if (this.profile === 'fmp4') {
-      const proxyPort = await this.#streamProxy.start(this.#config.localPort, this.#config.token);
+      const proxyPort = await this.#streamProxy.start({
+        phonePort: this.#config.localPort,
+        token: this.#config.token,
+      });
       baseUrl = `http://127.0.0.1:${proxyPort}`;
     }
 
@@ -185,87 +222,93 @@ export class PipelineModule {
       token: this.profile === 'fmp4' ? '' : this.#config.token,
       settings,
       outputSize,
+      // iOS mirrors in AVCaptureConnection; Android's encoder surface cannot,
+      // so the desktop flips the picture for it.
+      mirror: this.#platform === 'android' && settings.mirror,
       targets: {
         videoDevice: this.#video.path,
-        ...(settings.audio.enabled ? { audioSink: this.#audio.sinkName } : {}),
+        ...(this.#outputPlatform ? { platform: this.#outputPlatform } : {}),
+        ...(withAudio ? { audioSink: this.#audio.sinkName } : {}),
       },
     });
 
-    this.#log.info({ profile: this.profile }, 'starting ffmpeg');
-    this.#ffmpeg.start(args, (reason) => void this.#onFfmpegExit(reason));
+    this.#log.info({ profile: this.profile, generation, size: outputSize, fps: settings.fps }, 'starting ffmpeg');
+    this.#ffmpeg.start(args, (reason) => void this.#onFfmpegExit(generation, reason));
     this.#transition('STREAMING');
-    // Clear the failure streak once a start has been attempted cleanly.
-    setTimeout(() => { if (this.#state === 'STREAMING') this.#ffmpegRetries = 0; }, 10_000);
+    // Clear the failure streak once a run has stayed up for a while.
+    setTimeout(() => {
+      if (this.#state === 'STREAMING' && this.#generation === generation) this.#ffmpegRetries = 0;
+    }, 10_000);
   }
 
   async stop(): Promise<void> {
-    await this.#ffmpeg.stop();
-    await this.#streamProxy.stop();
+    this.#clearResumeWatch();
+    await this.#stopFfmpeg();
     if (this.#state === 'STREAMING') {
       this.#transition(this.#control.settings ? 'READY' : 'NO_DEVICE');
     }
   }
 
+  /** Stop the current run so that its exit is never mistaken for a failure. */
+  async #stopFfmpeg(): Promise<void> {
+    this.#generation += 1;
+    await this.#ffmpeg.stop();
+    await this.#streamProxy.stop();
+  }
+
+  /** Poll /health until the phone reports a running camera. */
+  async #waitForCapture(timeoutMs = CAPTURE_WAIT_MS): Promise<boolean> {
+    const until = Date.now() + timeoutMs;
+    while (Date.now() < until) {
+      try {
+        const health = await this.#control.client.health();
+        if (health.streaming) return true;
+      } catch {
+        // The phone may drop requests while it rebuilds the capture session.
+      }
+      await sleep(300);
+    }
+    return false;
+  }
+
   /**
    * ffmpeg exited on its own. WE decide whether to respawn — ffmpeg's own
    * -reconnect is deliberately not used. docs/04 §5.1.
+   *
+   * The common cause is the phone restarting its camera (a settings change
+   * made on the phone, an interruption, a thermal stop): it closes the stream
+   * so the client can fetch a fresh init segment. So wait for the camera, pick
+   * up the phone's current settings, and reconnect.
    */
-  async #onFfmpegExit(reason: string): Promise<void> {
+  async #onFfmpegExit(generation: number, reason: string): Promise<void> {
+    // An exit from a run we already replaced must not touch the new one.
+    if (generation !== this.#generation || this.#restarting) return;
     await this.#streamProxy.stop();
-    if (this.#restarting) return;
     this.#log.warn({ reason }, 'ffmpeg exited');
-
     if (this.#state !== 'STREAMING') return;
+    this.#transition('READY');
 
-    // Ask the phone what is actually wrong before blindly retrying.
-    let health: Health;
-    try {
-      health = await this.#control.client.health();
-    } catch {
-      this.#log.warn('phone unreachable after ffmpeg exit');
-      this.#transition('READY');
-      await this.#startPlaceholder();
-      return;
-    }
+    const capturing = await this.#waitForCapture();
+    if (generation !== this.#generation || this.#restarting) return;
 
-    // A stale streaming client on the phone refuses every reconnect. Retrying
-    // cannot clear it, so name the remedy instead of burning through attempts.
-    if (/409|Conflict|already streaming|already_streaming/i.test(reason)) {
+    if (!capturing) {
+      let reachable = true;
+      try { await this.#control.client.health(); } catch { reachable = false; }
       this.#log.error(
-        'the phone still has a stale streaming client registered; '
-        + 'tap Stop server then Start server in the app to clear it',
+        reachable
+          ? 'phone is reachable but its camera is not running'
+          : 'phone unreachable after ffmpeg exit',
       );
       this.#bus.emit({
         type: 'pipeline.error',
-        code: 'already_streaming',
-        message:
-          'The phone is refusing new connections because an old streaming client is '
-          + 'still registered. On the phone, tap Stop server then Start server.',
+        code: reachable ? 'capture_failed' : 'device_not_found',
+        message: reachable
+          ? 'The phone is connected but its camera is not running. Open Webcamo on the phone; '
+            + 'streaming resumes by itself once the camera is back.'
+          : 'Lost the phone. Check the USB cable and that Webcamo is open.',
         fatal: false,
       });
       this.#ffmpegRetries = 0;
-      this.#transition('READY');
-      await this.#startPlaceholder();
-      this.#watchForCaptureResume();
-      return;
-    }
-
-    // The phone is alive but not capturing: retrying cannot help, and looping
-    // on it hammers the device and hides the real cause. Say so and stop.
-    if (!health.streaming) {
-      this.#log.error(
-        'phone is reachable but its camera is not running — tap Start server in the app',
-      );
-      this.#bus.emit({
-        type: 'pipeline.error',
-        code: 'capture_failed',
-        message:
-          'The phone is connected but not capturing. Open mobile_webcam on the phone '
-          + 'and tap Start server.',
-        fatal: false,
-      });
-      this.#ffmpegRetries = 0;
-      this.#transition('READY');
       await this.#startPlaceholder();
       this.#watchForCaptureResume();
       return;
@@ -282,40 +325,96 @@ export class PipelineModule {
         fatal: false,
       });
       this.#ffmpegRetries = 0;
-      this.#transition('READY');
       await this.#startPlaceholder();
       return;
     }
 
-    const delayMs = Math.min(500 * 2 ** (this.#ffmpegRetries - 1), 5000);
-    this.#log.info({ attempt: this.#ffmpegRetries, delayMs }, 'restarting ffmpeg');
-    this.#transition('READY');
-    await new Promise((r) => setTimeout(r, delayMs));
-    await this.start();
+    const delayMs = Math.min(250 * 2 ** (this.#ffmpegRetries - 1), 4000);
+    this.#log.info({ attempt: this.#ffmpegRetries, delayMs }, 'reconnecting to the phone');
+    await sleep(delayMs);
+    if (generation !== this.#generation || this.#restarting) return;
+    try {
+      // The phone may have changed resolution itself; never stream stale caps.
+      await this.#control.refresh();
+      await this.start();
+    } catch (e) {
+      this.#log.error({ err: e }, 'reconnect failed');
+      await this.#startPlaceholder();
+      this.#watchForCaptureResume();
+    }
   }
 
   /**
    * Apply a settings patch, restarting the stream only when the codec parameters
    * actually change. The V4L2 device is never torn down, so consumers keep it
    * open across the change. docs/01 §5.5.
+   *
+   * Order matters: ffmpeg is stopped BEFORE the phone restarts its camera, so the
+   * phone closing the old stream is not mistaken for a failure; then we wait
+   * until the phone reports the new capture running instead of guessing a delay.
    */
-  async applySettings(patch: SettingsPatch): Promise<void> {
-    const { restartRequired, settings } = await this.#control.applySettings(patch);
-    if (!restartRequired || this.#state !== 'STREAMING') return;
+  applySettings(patch: SettingsPatch, source: 'user' | 'auto' = 'user'): Promise<void> {
+    // One change at a time: two quick clicks in the dashboard must not run two
+    // camera restarts on top of each other.
+    const run = this.#settingsChain.then(() => this.#applySettings(patch, source));
+    this.#settingsChain = run.catch(() => undefined);
+    return run;
+  }
+
+  #settingsChain: Promise<void> = Promise.resolve();
+
+  async #applySettings(patch: SettingsPatch, source: 'user' | 'auto'): Promise<void> {
+    if (source === 'user') {
+      // The user chose a quality by hand; do not "restore" over it later.
+      this.#preDegrade = null;
+      this.clearDegraded();
+    }
+
+    const restart = requiresRestart(patch)
+      && this.#state === 'STREAMING'
+      && !this.#config.directMode;
+    if (!restart) {
+      await this.#control.applySettings(patch);
+      return;
+    }
 
     this.#restarting = true;
+    this.#clearResumeWatch();
     this.#transition('RECONFIGURING');
     try {
-      await this.#ffmpeg.stop();
-      await new Promise((r) => setTimeout(r, 500));
+      await this.#stopFfmpeg();
+      let settings: Settings;
+      try {
+        ({ settings } = await this.#control.applySettings(patch));
+      } catch (e) {
+        // Rejected (e.g. invalid value): the phone kept its old capture, so
+        // bring the old stream back before reporting the error.
+        this.#restarting = false;
+        this.#transition('READY');
+        await this.start().catch(() => this.#startPlaceholder());
+        throw e;
+      }
+      if (!(await this.#waitForCapture())) {
+        throw new AppError({
+          code: 'capture_failed',
+          message: 'The phone did not restart its camera with the new settings.',
+        });
+      }
       await this.#video.pinCaps(settings.resolution.width, settings.resolution.height, settings.fps);
       this.#restarting = false;
+      this.#transition('READY');
       await this.start();
     } catch (e) {
-      this.#restarting = false;
-      this.#log.error({ err: e }, 'reconfiguration failed');
-      this.#transition('READY');
+      if (this.#restarting) {
+        this.#restarting = false;
+        this.#log.error({ err: e }, 'reconfiguration failed');
+        this.#transition('READY');
+        await this.#startPlaceholder();
+        this.#watchForCaptureResume();
+      }
       throw e;
+    } finally {
+      this.#restarting = false;
     }
   }
 
@@ -354,7 +453,8 @@ export class PipelineModule {
   /** Step quality down under thermal pressure or sustained drops. docs/05 §F11. */
   async degrade(reason: 'thermal' | 'drops'): Promise<void> {
     const s = this.#control.settings;
-    if (!s || this.#degraded) return;
+    if (!s) return;
+    if (Date.now() - this.#lastDegradeAt < DEGRADE_COOLDOWN_MS) return;
 
     const next =
       s.resolution.height > 1080
@@ -385,11 +485,26 @@ export class PipelineModule {
       return;
     }
 
+    this.#preDegrade ??= { resolution: s.resolution, fps: s.fps, bitrate: s.bitrate };
     this.#degraded = true;
+    this.#lastDegradeAt = Date.now();
     const action = `reduced ${Object.keys(next)[0]}`;
     this.#log.warn({ reason, next }, 'degrading quality');
     this.#bus.emit({ type: 'telemetry.degraded', reason, action });
-    await this.applySettings(next);
+    await this.applySettings(next, 'auto');
+  }
+
+  /** The phone has cooled down: put back the quality the user picked. */
+  async restoreQuality(): Promise<void> {
+    const before = this.#preDegrade;
+    if (!before) { this.clearDegraded(); return; }
+    this.#log.info({ restore: before }, 'phone cooled down; restoring quality');
+    this.#preDegrade = null;
+    this.clearDegraded();
+    await this.applySettings(
+      { resolution: before.resolution, fps: before.fps, bitrate: before.bitrate },
+      'auto',
+    );
   }
 
   clearDegraded(): void {
@@ -399,7 +514,7 @@ export class PipelineModule {
 
   async shutdown(): Promise<void> {
     this.#clearResumeWatch();
-    await this.#ffmpeg.stop();
+    await this.#stopFfmpeg();
     await this.#placeholder.stop();
   }
 }

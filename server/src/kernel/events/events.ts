@@ -11,7 +11,7 @@ import type {
  * a command and belongs in a direct interface call. See docs/04 §1 rule 5.
  */
 export type AppEvent =
-  | { type: 'device.connected'; udid: string; name: string; model: string; ios: string }
+  | { type: 'device.connected'; udid: string; name: string; model: string; ios: string; platform?: 'ios' | 'android' }
   | { type: 'device.disconnected'; udid: string }
   | { type: 'tunnel.opened'; localPort: number; devicePort: number }
   | { type: 'tunnel.closed'; reason: string }

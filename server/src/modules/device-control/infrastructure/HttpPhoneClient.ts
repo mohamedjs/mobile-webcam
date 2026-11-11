@@ -30,6 +30,7 @@ export class HttpPhoneClient implements PhoneClient {
     path: string,
     schema: { parse: (v: unknown) => T },
     init: RequestInit = {},
+    timeoutMs = this.#opts.timeoutMs,
   ): Promise<T> {
     const url = `${this.#opts.baseUrl()}${path}`;
     const token = this.#opts.token();
@@ -44,7 +45,7 @@ export class HttpPhoneClient implements PhoneClient {
       res = await fetch(url, {
         ...init,
         headers,
-        signal: AbortSignal.timeout(this.#opts.timeoutMs),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (cause) {
       // ECONNRESET here means the tunnel reached the phone and the phone refused
@@ -85,10 +86,11 @@ export class HttpPhoneClient implements PhoneClient {
   }
 
   patchSettings(patch: SettingsPatch): Promise<Settings> {
+    // A restart-requiring change rebuilds the camera before the phone answers.
     return this.#request('/settings', SettingsSchema, {
       method: 'PATCH',
       body: JSON.stringify(patch),
-    });
+    }, 15_000);
   }
 
   telemetry(): Promise<Telemetry> {
@@ -106,6 +108,6 @@ export class HttpPhoneClient implements PhoneClient {
     return this.#request('/actions/switch-camera', CapabilitiesSchema, {
       method: 'POST',
       body: JSON.stringify({ lens }),
-    });
+    }, 15_000);
   }
 }

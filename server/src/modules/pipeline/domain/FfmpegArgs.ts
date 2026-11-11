@@ -18,6 +18,8 @@ export interface FfmpegBuildInput {
    * always the requested resolution. Falls back to settings.resolution.
    */
   outputSize?: { width: number; height: number };
+  /** Flip horizontally here (phones that cannot mirror in hardware). */
+  mirror?: boolean;
 }
 
 /**
@@ -35,7 +37,9 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   const args: string[] = ['-hide_banner', '-loglevel', 'warning', '-stats'];
 
   if (profile === 'mjpeg') {
-    args.push('-f', 'mjpeg');
+    // ffmpeg's HTTP client waits forever on a silent socket; give up after 5 s
+    // so a frozen phone becomes an exit the pipeline can recover from.
+    args.push('-rw_timeout', '5000000', '-f', 'mjpeg');
   } else {
     args.push(
       '-fflags', '+genpts+nobuffer',
@@ -69,6 +73,7 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
   // actually sends (a rotated frame, a mode the hardware silently substituted,
   // or a stale stream from before a resolution change).
   const filters: string[] = [];
+  if (input.mirror) filters.push('hflip');
   if (settings.rotation === 90) {
     filters.push('transpose=1');
   } else if (settings.rotation === 180) {

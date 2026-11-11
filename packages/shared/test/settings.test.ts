@@ -55,7 +55,7 @@ test('requiresRestart is true for session-level keys only', () => {
 
   assert.equal(requiresRestart({ zoom: 2 }), false);
   assert.equal(requiresRestart({ torch: true }), false);
-  assert.equal(requiresRestart({ bitrate: 12_000_000 }), false);
+  assert.equal(requiresRestart({ bitrate: 12_000_000 }), true);
   assert.equal(requiresRestart({ mirror: true }), false);
   assert.equal(requiresRestart({ cinematic: { aperture: 4 } }), false);
 });

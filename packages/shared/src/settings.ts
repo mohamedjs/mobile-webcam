@@ -88,7 +88,7 @@ export function defaultBitrateFor(width: number, height: number): number {
  * Settings whose change requires tearing down and rebuilding AVCaptureSession,
  * which breaks the current fMP4 stream. See docs/01 §5.5.
  */
-const RESTART_KEYS = ['lens', 'resolution', 'fps'] as const;
+const RESTART_KEYS = ['lens', 'resolution', 'fps', 'bitrate'] as const;
 
 export function requiresRestart(patch: SettingsPatch): boolean {
   if (patch.cinematic?.enabled !== undefined) return true;
@@ -187,6 +187,10 @@ export function validateAgainstCapabilities(
 
   if (patch.hdr === true && !caps.hdr) {
     issues.push({ field: 'hdr', message: 'Device does not support HDR' });
+  }
+
+  if (patch.audio?.enabled === true && caps.audio.supported === false) {
+    issues.push({ field: 'audio.enabled', message: 'This phone cannot stream audio yet' });
   }
 
   if (patch.audio?.sampleRate !== undefined && !caps.audio.sampleRates.includes(patch.audio.sampleRate)) {

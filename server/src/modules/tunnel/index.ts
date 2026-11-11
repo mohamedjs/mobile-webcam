@@ -31,7 +31,7 @@ export class TunnelModule {
     return `http://127.0.0.1:${this.#config.localPort}`;
   }
 
-  async open(device?: Device | null): Promise<void> {
+  async open(device?: Pick<Device, 'platform' | 'udid'> | null): Promise<void> {
     if (this.isOpen) return;
 
     const { localPort, devicePort } = this.#config;
@@ -42,8 +42,11 @@ export class TunnelModule {
       try {
         await this.#adb.open(localPort, devicePort, device?.udid);
         this.#bus.emit({ type: 'tunnel.opened', localPort, devicePort });
-      } catch (err: any) {
+      } catch (err) {
+        // Swallowing this left the pipeline waiting 30 s on a tunnel that
+        // never existed. Fail now with the real reason.
         this.#bus.emit({ type: 'tunnel.failed', error: String(err) });
+        throw err;
       }
     } else {
       this.#currentMode = 'iproxy';

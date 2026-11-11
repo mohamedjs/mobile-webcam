@@ -115,8 +115,9 @@ export class DeviceControlModule {
     const settings = await this.#client.patchSettings(patch);
     this.#settings = settings;
 
-    // Cinematic changes what the device will accept — re-read rather than assume.
-    if (patch.cinematic?.enabled !== undefined) {
+    // Cinematic and the lens change what the device will accept (each lens has
+    // its own resolutions) — re-read rather than assume.
+    if (patch.cinematic?.enabled !== undefined || patch.lens !== undefined) {
       this.#capabilities = await this.#client.capabilities();
     }
 
@@ -125,9 +126,14 @@ export class DeviceControlModule {
     return { settings, restartRequired };
   }
 
+  /** Re-read the phone; tells the dashboard when the phone changed something itself. */
   async refresh(): Promise<void> {
+    const before = JSON.stringify(this.#settings);
     this.#capabilities = await this.#client.capabilities();
     this.#settings = await this.#client.settings();
+    if (JSON.stringify(this.#settings) !== before) {
+      this.#bus.emit({ type: 'phone.settings.changed', settings: this.#settings });
+    }
   }
 
   invalidate(): void {

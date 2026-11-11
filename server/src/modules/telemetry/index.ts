@@ -8,6 +8,8 @@ const MAX_SAMPLES = 300;
 const SAMPLE_MS = 1000;
 /** Consecutive bad samples before acting — one spike must not trigger degradation. */
 const DEGRADE_AFTER = 5;
+/** Consecutive cool samples before the original quality is restored. */
+const RESTORE_AFTER = 60;
 
 export class TelemetryModule {
   readonly #log: Logger;
@@ -18,7 +20,7 @@ export class TelemetryModule {
   readonly #samples: MetricsSample[] = [];
   #timer: NodeJS.Timeout | null = null;
   #badStreak = 0;
-  #lastDropped = 0;
+  #coolStreak = 0;
 
   constructor(deps: {
     log: Logger;
@@ -88,23 +90,33 @@ export class TelemetryModule {
   }
 
   async #evaluate(sample: MetricsSample): Promise<void> {
+    // Only heat lowers quality. ffmpeg's drop= counter also counts frames it
+    // skips to stay real-time, so acting on it kept lowering the resolution of
+    // healthy streams for good.
     const thermal = sample.thermalState === 'serious' || sample.thermalState === 'critical';
-    const newDrops = sample.droppedFrames - this.#lastDropped;
-    this.#lastDropped = sample.droppedFrames;
-    const dropping = newDrops > 5;
 
-    if (!thermal && !dropping) {
+    if (!thermal) {
       this.#badStreak = 0;
+      if (!this.#pipeline.degraded) return;
+      this.#coolStreak += 1;
+      if (this.#coolStreak < RESTORE_AFTER) return;
+      this.#coolStreak = 0;
+      try {
+        await this.#pipeline.restoreQuality();
+      } catch (e) {
+        this.#log.error({ err: e }, 'restoring quality failed');
+      }
       return;
     }
 
+    this.#coolStreak = 0;
     this.#badStreak += 1;
     if (this.#badStreak < DEGRADE_AFTER) return;
 
     this.#badStreak = 0;
-    this.#log.warn({ thermal, newDrops }, 'sustained degradation');
+    this.#log.warn({ thermalState: sample.thermalState }, 'sustained thermal pressure');
     try {
-      await this.#pipeline.degrade(thermal ? 'thermal' : 'drops');
+      await this.#pipeline.degrade('thermal');
     } catch (e) {
       this.#log.error({ err: e }, 'degrade failed');
     }

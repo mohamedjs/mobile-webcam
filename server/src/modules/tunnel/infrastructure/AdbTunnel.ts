@@ -19,8 +19,12 @@ export class AdbTunnel {
     return this.#isOpen;
   }
 
+  #devicePort = 0;
+  #repairing = false;
+
   async open(localPort: number, devicePort: number, udid?: string): Promise<void> {
     this.#localPort = localPort;
+    this.#devicePort = devicePort;
     this.#udid = udid;
 
     const args = udid
@@ -66,16 +70,28 @@ export class AdbTunnel {
   async #checkHealth(localPort: number): Promise<void> {
     try {
       const { stdout } = await run('adb', ['forward', '--list'], { timeout: 3000 });
-      if (!stdout.includes(`tcp:${localPort}`)) {
+      if (stdout.includes(`tcp:${localPort}`)) return;
+      // adb drops forwards when the adb server restarts or the phone re-enumerates
+      // (screen unlock, USB mode change) while discovery still sees the device.
+      // Put it back instead of leaving a dead port behind.
+      if (this.#repairing) return;
+      this.#repairing = true;
+      this.#log.warn({ localPort }, 'adb forward disappeared; re-creating it');
+      const args = this.#udid
+        ? ['-s', this.#udid, 'forward', `tcp:${localPort}`, `tcp:${this.#devicePort}`]
+        : ['forward', `tcp:${localPort}`, `tcp:${this.#devicePort}`];
+      try {
+        await run('adb', args, { timeout: 5000 });
+        this.#isOpen = true;
+        this.#log.info({ localPort }, 'adb forward restored');
+      } catch (err) {
         this.#isOpen = false;
-        this.#log.warn({ localPort }, 'adb forward disappeared');
-        if (this.#checkTimer) {
-          clearInterval(this.#checkTimer);
-          this.#checkTimer = null;
-        }
+        this.#log.error({ err }, 'could not restore adb forward');
+      } finally {
+        this.#repairing = false;
       }
     } catch {
-      this.#isOpen = false;
+      // adb itself failed this round; try again on the next check.
     }
   }
 }
