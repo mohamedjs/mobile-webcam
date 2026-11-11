@@ -21,6 +21,7 @@ final class FragmentedMP4Writer: NSObject {
   private var videoInput: AVAssetWriterInput?
   private var audioInput: AVAssetWriterInput?
   private var started = false
+  private var reportedFailure = false
   private let queue = DispatchQueue(label: "webcam.fmp4")
 
   private(set) var initializationSegment: Data?
@@ -67,6 +68,7 @@ final class FragmentedMP4Writer: NSObject {
       }
       writer = w
       started = false
+      reportedFailure = false
       initializationSegment = nil
       Log.info("fmp4 writer started \(width)x\(height)@\(fps)")
     }
@@ -74,7 +76,20 @@ final class FragmentedMP4Writer: NSObject {
 
   func append(video sample: CMSampleBuffer) {
     queue.async {
-      guard let writer = self.writer, writer.status == .writing else { return }
+      guard let writer = self.writer else { return }
+      if writer.status == .failed {
+        // A failed writer drops every frame silently while /health still says
+        // "streaming"; the desktop then sees a frozen picture. Report it once so
+        // the controller can rebuild the writer.
+        if !self.reportedFailure {
+          self.reportedFailure = true
+          let error = writer.error ?? WriterError.startFailed
+          Log.error("asset writer failed: \(error.localizedDescription)")
+          self.delegate?.writer(self, didFailWith: error)
+        }
+        return
+      }
+      guard writer.status == .writing else { return }
       if !self.started {
         writer.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sample))
         self.started = true

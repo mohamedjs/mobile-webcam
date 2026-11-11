@@ -11,7 +11,9 @@ struct Routes {
   let store: SettingsStore
   let appVersion: String
   let protocolVersion: Int
-  let onSettingsApplied: (Settings, Bool) -> Void
+  /// (next, previous, restartRequired). Throws when the camera could not be
+  /// restarted with the new settings.
+  let onSettingsApplied: (Settings, Settings, Bool) throws -> Void
 
   func handle(_ request: HTTPRequest) -> HTTPResponse {
     switch (request.method, request.path) {
@@ -80,8 +82,14 @@ struct Routes {
     store.replace(next)
     let restart = next.requiresRestart(comparedTo: previous)
     if !restart { capture.applyLive(next) }
-    onSettingsApplied(next, restart)
-    return settingsResponse(next)
+    // A restart happens BEFORE answering, so a 200 means the camera is already
+    // producing with the new settings and the desktop can reconnect at once.
+    do {
+      try onSettingsApplied(next, previous, restart)
+    } catch {
+      return .error("capture_failed", error.localizedDescription, status: 500)
+    }
+    return settingsResponse(store.current)
   }
 
   private func focus(_ request: HTTPRequest) -> HTTPResponse {

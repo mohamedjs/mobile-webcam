@@ -76,12 +76,13 @@ struct Settings: Codable, Equatable {
   )
 
   /// Which keys force an AVCaptureSession rebuild, breaking the current stream.
-  /// docs/01 §5.5.
+  /// Bitrate is fixed when the asset writer starts, so it needs a rebuild too.
+  /// Rotation does not: the desktop rotates the picture. docs/01 §5.5.
   func requiresRestart(comparedTo other: Settings) -> Bool {
     lens != other.lens
       || resolution != other.resolution
       || fps != other.fps
-      || rotation != other.rotation
+      || bitrate != other.bitrate
   }
 }
 

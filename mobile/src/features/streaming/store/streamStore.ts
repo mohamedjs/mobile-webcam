@@ -1,7 +1,24 @@
+import { PermissionsAndroid, Platform } from 'react-native';
 import { create } from 'zustand';
 import { DEFAULT_DEVICE_PORT } from '@mobile-webcam/shared';
 import { WebcamServer } from '@/native/WebcamServer';
 import { log } from '@/shared/lib/logger';
+
+/**
+ * Android grants camera access at runtime only. Without asking first the native
+ * start fails on a fresh install. Notifications (Android 13+) let the
+ * foreground-service notice show; streaming works without it.
+ */
+async function ensureAndroidPermissions(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const camera = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
+  if (camera !== PermissionsAndroid.RESULTS.GRANTED) {
+    throw new Error('Camera permission is needed to stream. Allow it in Settings → Apps → Webcamo.');
+  }
+  if (Number(Platform.Version) >= 33) {
+    await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS).catch(() => undefined);
+  }
+}
 
 export interface StreamClient { clientId: string; profile: 'fmp4' | 'mjpeg' }
 
@@ -30,6 +47,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     if (get().busy) return;
     set({ busy: true, error: null });
     try {
+      await ensureAndroidPermissions();
       const res = await WebcamServer.startServer(get().port, token);
       set({ running: true, port: res.port, busy: false });
       log.info('server started', { port: res.port });
@@ -37,7 +55,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       const message = e instanceof Error ? e.message : String(e);
       // The highest-value diagnostic in the app: a bind failure is almost always
       // the Local Network permission. docs/03 §6.
-      const friendly = /bind|permission|denied|address/i.test(message)
+      const friendly = Platform.OS === 'ios' && /bind|permission|denied|address/i.test(message)
         ? 'iOS blocked the local network. Settings → Privacy & Security → Local Network → mobile_webcam.'
         : message;
       log.error('server start failed', message);

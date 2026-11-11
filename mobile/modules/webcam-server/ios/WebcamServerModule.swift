@@ -54,9 +54,14 @@ public final class WebcamServerModule: Module {
         store: self.store,
         appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0",
         protocolVersion: WebcamServerModule.protocolVersion,
-        onSettingsApplied: { [weak self] settings, restart in
-          self?.handleSettingsApplied(settings, restartRequired: restart)
+        onSettingsApplied: { [weak self] next, previous, restart in
+          guard restart, let self, self.capture.isRunning else { return }
+          try self.restartCapture(with: next, fallback: previous)
         })
+      self.capture.onWillRestart = { [weak self] in
+        // The writer is being rebuilt; old clients cannot decode what follows.
+        self?.server.closeAllStreams(reason: "camera restarted")
+      }
     }
 
     OnDestroy {
@@ -120,13 +125,12 @@ public final class WebcamServerModule: Module {
       let restart = next.requiresRestart(comparedTo: previous)
 
       if restart, self.capture.isRunning {
-        self.capture.stop()
-        try self.capture.start(with: next, profile: "fmp4")
-      } else {
+        try self.restartCapture(with: next, fallback: previous)
+      } else if !restart {
         self.capture.applyLive(next)
       }
 
-      return try self.encode(next)
+      return try self.encode(self.store.current)
     }
 
     AsyncFunction("focusAt") { (x: Double, y: Double) in
@@ -134,15 +138,15 @@ public final class WebcamServerModule: Module {
     }
 
     AsyncFunction("setLens") { (lensId: String) -> [String: Any] in
-      var next = self.store.current
+      let previous = self.store.current
+      var next = previous
       guard !next.lockLens else {
         throw SettingError.invalid(field: "lens", message: "Lens is locked")
       }
       next.lens = lensId
       self.store.replace(next)
       if self.capture.isRunning {
-        self.capture.stop()
-        try self.capture.start(with: next, profile: "fmp4")
+        try self.restartCapture(with: next, fallback: previous)
       }
       return self.capture.capabilities()
     }
@@ -191,22 +195,32 @@ public final class WebcamServerModule: Module {
     }
   }
 
-  private func handleSettingsApplied(_ settings: Settings, restartRequired: Bool) {
-    guard restartRequired, capture.isRunning else { return }
-    // Restarting the session invalidates the codec parameters in the current
-    // fMP4 stream, so the client is dropped and must reconnect for a fresh
-    // initialisation segment. docs/01 §5.5.
+  /// Rebuild the capture with new settings, synchronously.
+  ///
+  /// Restarting invalidates the codec parameters of the current fMP4 stream, so
+  /// every client is dropped first and reconnects for the new initialisation
+  /// segment. The old asynchronous restart answered the desktop before the
+  /// camera was back, and the desktop's reconnect then hit "camera is not
+  /// running" (409) — the stream dropped on every resolution change.
+  /// If the new settings fail, the previous ones are put back so the phone is
+  /// never left with no camera. docs/01 §5.5.
+  private func restartCapture(with next: Settings, fallback previous: Settings) throws {
     pendingRestart = true
-    DispatchQueue.global(qos: .userInitiated).async {
-      self.capture.stop()
-      do {
-        try self.capture.start(with: settings, profile: "fmp4")
-      } catch {
-        self.sendEvent("onError", [
-          "code": "capture_failed", "message": error.localizedDescription, "fatal": true,
-        ])
-      }
-      self.pendingRestart = false
+    defer { pendingRestart = false }
+    server.closeAllStreams(reason: "settings changed")
+    capture.stop()
+    do {
+      try capture.start(with: next, profile: "fmp4")
+    } catch {
+      Log.error("restart with new settings failed: \(error.localizedDescription)")
+      store.replace(previous)
+      try? capture.start(with: previous, profile: "fmp4")
+      sendEvent("onError", [
+        "code": "capture_failed",
+        "message": "Could not apply the new settings: \(error.localizedDescription)",
+        "fatal": false,
+      ])
+      throw error
     }
   }
 

@@ -98,6 +98,26 @@ final class CaptureSessionController: NSObject {
   /// Called with (reason, recovered). Wired to a JS event by the module.
   var onInterruption: ((String, Bool) -> Void)?
 
+  /// Called right before the asset writer is rebuilt on its own (recovery),
+  /// so the server can drop clients that hold the old init segment.
+  var onWillRestart: (() -> Void)?
+
+  /// Rebuild the asset writer after it failed, keeping the session running.
+  func recoverWriter(after error: Error) {
+    configQueue.async { [weak self] in
+      guard let self, self.running, self.activeProfile == "fmp4" else { return }
+      self.onWillRestart?()
+      do {
+        try self.startWriterLocked()
+        Log.info("asset writer rebuilt")
+        self.onInterruption?("encoder restarted", true)
+      } catch {
+        Log.error("could not rebuild the asset writer: \(error.localizedDescription)")
+        self.delegate?.capture(self, didFail: error)
+      }
+    }
+  }
+
   private func resumeAfterInterruption() {
     configQueue.async { [weak self] in
       guard let self, self.running else { return }
@@ -107,6 +127,7 @@ final class CaptureSessionController: NSObject {
       if !self.session.isRunning {
         // startRunning() is best-effort; a full reconfigure is the fallback.
         do {
+          self.onWillRestart?()
           try self.configureLocked()
           self.session.startRunning()
           if self.activeProfile == "fmp4" { try self.startWriterLocked() }
@@ -135,7 +156,14 @@ final class CaptureSessionController: NSObject {
   /// `running` is our own bool and drifts from reality the moment iOS stops the
   /// session underneath us (thermal pressure, backgrounding, another app taking
   /// the camera). /health reported "capturing" while the camera was dead.
-  var isRunning: Bool { configQueue.sync { running && session.isRunning } }
+  ///
+  /// For fMP4 the writer must be healthy too: a failed AVAssetWriter produces
+  /// nothing while the session keeps running.
+  var isRunning: Bool {
+    configQueue.sync {
+      running && session.isRunning && (activeProfile != "fmp4" || writer.isRunning)
+    }
+  }
 
   // MARK: - Capabilities
 
@@ -242,19 +270,15 @@ final class CaptureSessionController: NSObject {
         connection.automaticallyAdjustsVideoMirroring = false
         connection.isVideoMirrored = settings.mirror
       }
+      // Always landscape. settings.rotation is applied on the desktop by
+      // ffmpeg; rotating here as well turned the picture twice, and a portrait
+      // buffer written into the landscape-sized encoder was squashed.
       if #available(iOS 17.0, *) {
-        if connection.isVideoRotationAngleSupported(CGFloat(settings.rotation)) {
-          connection.videoRotationAngle = CGFloat(settings.rotation)
+        if connection.isVideoRotationAngleSupported(0) {
+          connection.videoRotationAngle = 0
         }
-      } else {
-        if connection.isVideoOrientationSupported {
-          switch settings.rotation {
-          case 90: connection.videoOrientation = .portrait
-          case 180: connection.videoOrientation = .landscapeLeft
-          case 270: connection.videoOrientation = .portraitUpsideDown
-          default: connection.videoOrientation = .landscapeRight
-          }
-        }
+      } else if connection.isVideoOrientationSupported {
+        connection.videoOrientation = .landscapeRight
       }
       if connection.isVideoStabilizationSupported {
         connection.preferredVideoStabilizationMode =

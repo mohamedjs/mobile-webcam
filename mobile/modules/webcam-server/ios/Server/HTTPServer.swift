@@ -109,6 +109,16 @@ final class HTTPServer {
     Telemetry.shared.setClients(0)
   }
 
+  /// Drop every streaming client.
+  ///
+  /// Used whenever the camera restarts: a client that already has the old
+  /// initialisation segment can never decode the new stream, so it must
+  /// reconnect and receive the new one.
+  func closeAllStreams(reason: String) {
+    let current = stateQueue.sync { Array(streams.values) }
+    for stream in current { stream.close(reason: reason) }
+  }
+
   /// Fan a media segment out to every attached client.
   func broadcast(_ data: Data, isInit: Bool = false) {
     let current = stateQueue.sync { Array(streams.values) }

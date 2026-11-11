@@ -111,7 +111,7 @@ extension CaptureSessionController: FragmentedMP4WriterDelegate {
   }
 
   func writer(_ writer: FragmentedMP4Writer, didFailWith error: Error) {
-    delegate?.capture(self, didFail: error)
+    recoverWriter(after: error)
   }
 }
 
