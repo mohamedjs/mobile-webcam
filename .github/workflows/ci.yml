@@ -74,8 +74,11 @@ jobs:
         working-directory: mobile
         run: npx expo config --type public
 
+      # Advisory: the version check compares against Expo's live registry, so it
+      # turns red whenever Expo publishes a patch. Bump with `npx expo install --fix`.
       - name: Expo doctor
         working-directory: mobile
+        continue-on-error: true
         run: npx expo-doctor
 
   # Compiles the Kotlin native module and the whole app. Until this job existed
