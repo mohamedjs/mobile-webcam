@@ -123,8 +123,9 @@ jobs:
   # Compiles the Swift native module for the simulator, unsigned. Catches
   # compiler errors without needing an Apple signing identity in CI.
   ios-build:
-    # Expo SDK 58 builds with Xcode 27 (Swift 6.4); older Xcode fails inside
-    # expo-modules-jsi with Swift concurrency errors.
+    # Expo SDK 58 needs a recent Xcode (verified with 26.6 on macos-26); the
+    # older default on macos-15 failed inside expo-modules-jsi with Swift
+    # concurrency errors.
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
