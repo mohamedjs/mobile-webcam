@@ -103,7 +103,13 @@ jobs:
 
       - name: Build release APK
         working-directory: mobile/android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee gradle.log || {
+            # Surface compiler errors as annotations so they show without opening the log.
+            grep -E '^e: |error:|What went wrong|FAILURE' -A3 gradle.log | head -80 | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' | sed 's/^/::error::/'; echo
+            exit 1
+          }
 
       - uses: actions/upload-artifact@v4
         with:
@@ -141,4 +147,9 @@ jobs:
           xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" \
             -configuration Release -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build | tail -200
+            CODE_SIGNING_ALLOWED=NO build > xcodebuild.log 2>&1 || {
+            # Surface compiler errors as annotations so they show without opening the log.
+            grep -E 'error:|\*\* BUILD FAILED' xcodebuild.log | sort -u | head -80 | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' | sed 's/^/::error::/'; echo
+            tail -80 xcodebuild.log
+            exit 1
+          }
