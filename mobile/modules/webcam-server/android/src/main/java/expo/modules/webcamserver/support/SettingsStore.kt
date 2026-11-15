@@ -49,19 +49,35 @@ data class Settings(
   var mirror: Boolean = false,
   var rotation: Int = 0,
   var stabilization: String = "standard",
-  var hdr: Boolean = true,
+  var hdr: Boolean = false,
   var lockLens: Boolean = false,
   var exposure: ExposureSettings = ExposureSettings(),
   var focus: LockableSettings = LockableSettings(),
   var whiteBalance: LockableSettings = LockableSettings(),
   var audio: AudioSettings = AudioSettings()
 ) {
+  /**
+   * Lens, resolution, fps and bitrate are baked into the camera session / the
+   * MediaCodec configuration, so changing them needs a capture restart.
+   * Rotation and mirroring are applied on the desktop (ffmpeg) and only stored.
+   */
   fun requiresRestart(comparedTo: Settings): Boolean {
     return lens != comparedTo.lens ||
       resolution != comparedTo.resolution ||
       fps != comparedTo.fps ||
-      rotation != comparedTo.rotation
+      bitrate != comparedTo.bitrate
   }
+
+  /** Copy including the nested (mutable) data classes. */
+  fun deepCopy(): Settings = copy(
+    resolution = resolution.copy(),
+    cinematic = cinematic.copy(),
+    blurFallback = blurFallback.copy(),
+    exposure = exposure.copy(),
+    focus = focus.copy(),
+    whiteBalance = whiteBalance.copy(),
+    audio = audio.copy()
+  )
 
   fun toMap(): Map<String, Any> {
     return mapOf(
@@ -103,19 +119,19 @@ class SettingsStore(private val context: Context? = null) {
   }
 
   val current: Settings
-    get() = synchronized(lock) { cached.copy() }
+    get() = synchronized(lock) { cached.deepCopy() }
 
   fun update(block: (Settings) -> Unit): Settings {
     return synchronized(lock) {
       block(cached)
       save()
-      cached.copy()
+      cached.deepCopy()
     }
   }
 
   fun replace(next: Settings) {
     synchronized(lock) {
-      cached = next.copy()
+      cached = next.deepCopy()
       save()
     }
   }
@@ -141,8 +157,19 @@ class SettingsStore(private val context: Context? = null) {
       cached.mirror = json.optBoolean("mirror", false)
       cached.rotation = json.optInt("rotation", 0)
       cached.stabilization = json.optString("stabilization", "standard")
-      cached.hdr = json.optBoolean("hdr", true)
+      cached.hdr = json.optBoolean("hdr", false)
       cached.lockLens = json.optBoolean("lockLens", false)
+      json.optJSONObject("exposure")?.let {
+        cached.exposure = ExposureSettings(
+          it.optString("mode", "auto"), it.optDouble("bias", 0.0), it.optBoolean("locked", false)
+        )
+      }
+      json.optJSONObject("focus")?.let {
+        cached.focus = LockableSettings(it.optString("mode", "auto"), it.optBoolean("locked", false))
+      }
+      json.optJSONObject("whiteBalance")?.let {
+        cached.whiteBalance = LockableSettings(it.optString("mode", "auto"), it.optBoolean("locked", false))
+      }
     } catch (_: Exception) {}
   }
 }

@@ -13,7 +13,9 @@ class Routes(
   private val store: SettingsStore,
   private val appVersion: String,
   private val protocolVersion: Int,
-  private val onSettingsApplied: (Settings, Boolean) -> Unit
+  /** (next, previous, restartRequired). Restarts the camera before returning;
+   *  throws when it could not. */
+  private val onSettingsApplied: (Settings, Settings, Boolean) -> Unit
 ) {
   fun handle(request: HTTPRequest): HTTPResponse {
     return when (request.method to request.path) {
@@ -56,17 +58,13 @@ class Routes(
   private fun patchSettings(request: HTTPRequest): HTTPResponse {
     val patch = request.jsonObject ?: return HTTPResponse.error("invalid_setting", "Body must be a JSON object", 400)
     val previous = store.current
-    val next = previous.copy(
-      resolution = previous.resolution.copy(),
-      cinematic = previous.cinematic.copy(),
-      blurFallback = previous.blurFallback.copy(),
-      exposure = previous.exposure.copy(),
-      focus = previous.focus.copy(),
-      whiteBalance = previous.whiteBalance.copy(),
-      audio = previous.audio.copy()
-    )
+    val next = previous.deepCopy()
 
-    val issue = applyPatch(patch, next, capture.capabilities())
+    val issue = try {
+      applyPatch(patch, next, capture.capabilities())
+    } catch (e: Exception) {
+      Issue("settings", "Malformed value: ${e.message}")
+    }
     if (issue != null) {
       return HTTPResponse.error("invalid_setting", issue.message, 400, issue.field)
     }
@@ -76,8 +74,14 @@ class Routes(
     if (!restart) {
       capture.applyLive(next)
     }
-    onSettingsApplied(next, restart)
-    return HTTPResponse.json(next.toMap())
+    // A restart happens BEFORE answering, so a 200 means the camera is already
+    // producing with the new settings and the desktop can reconnect at once.
+    try {
+      onSettingsApplied(next, previous, restart)
+    } catch (e: Exception) {
+      return HTTPResponse.error("capture_failed", e.message ?: "Camera restart failed", 500)
+    }
+    return HTTPResponse.json(store.current.toMap())
   }
 
   private fun focus(request: HTTPRequest): HTTPResponse {
@@ -180,9 +184,43 @@ class Routes(
       }
 
       if (patch.has("stabilization")) {
-        settings.stabilization = patch.getString("stabilization")
+        val value = patch.getString("stabilization")
+        val supported = (capabilities["stabilization"] as? List<String>) ?: listOf("off")
+        if (value !in supported) {
+          return Issue("stabilization", "Device does not support \"$value\"")
+        }
+        settings.stabilization = value
       }
-      if (patch.has("hdr")) settings.hdr = patch.getBoolean("hdr")
+      if (patch.has("hdr")) {
+        val hdr = patch.getBoolean("hdr")
+        if (hdr && capabilities["hdr"] != true) return Issue("hdr", "Device does not support HDR")
+        settings.hdr = hdr
+      }
+
+      patch.optJSONObject("exposure")?.let { e ->
+        if (e.has("bias")) {
+          val bias = e.getDouble("bias")
+          if (bias !in -2.0..2.0) return Issue("exposure.bias", "Bias must be -2 to +2 EV")
+          settings.exposure.bias = bias
+        }
+        if (e.has("locked")) settings.exposure.locked = e.getBoolean("locked")
+        if (e.has("mode")) settings.exposure.mode = e.getString("mode")
+      }
+      patch.optJSONObject("focus")?.let { f ->
+        if (f.has("locked")) settings.focus.locked = f.getBoolean("locked")
+        if (f.has("mode")) settings.focus.mode = f.getString("mode")
+      }
+      patch.optJSONObject("whiteBalance")?.let { w ->
+        if (w.has("locked")) settings.whiteBalance.locked = w.getBoolean("locked")
+        if (w.has("mode")) settings.whiteBalance.mode = w.getString("mode")
+      }
+      patch.optJSONObject("audio")?.let { a ->
+        // Stored for when Android gets audio; the capabilities say unsupported.
+        if (a.has("enabled")) settings.audio.enabled = a.getBoolean("enabled")
+        if (a.has("sampleRate")) settings.audio.sampleRate = a.getInt("sampleRate")
+        if (a.has("channels")) settings.audio.channels = a.getInt("channels")
+        if (a.has("bitrate")) settings.audio.bitrate = a.getInt("bitrate")
+      }
 
       return null
     }

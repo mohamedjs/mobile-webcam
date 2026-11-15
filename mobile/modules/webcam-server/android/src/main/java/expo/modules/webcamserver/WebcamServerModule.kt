@@ -15,6 +15,7 @@ import expo.modules.webcamserver.server.StreamConnection
 import expo.modules.webcamserver.support.Log
 import expo.modules.webcamserver.support.Settings
 import expo.modules.webcamserver.support.SettingsStore
+import expo.modules.webcamserver.support.StreamingService
 import expo.modules.webcamserver.support.Telemetry
 import expo.modules.webcamserver.views.WebcamPreviewView
 import org.json.JSONObject
@@ -57,14 +58,18 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
           )
         )
       }
+      c.onWillRestart = {
+        // The encoder is rebuilt; old clients cannot decode what follows.
+        server.closeAllStreams("camera restarted")
+      }
       server.delegate = this@WebcamServerModule
       routes = Routes(
         capture = c,
         store = s,
         appVersion = "1.0.0",
         protocolVersion = 1,
-        onSettingsApplied = { settings, restart ->
-          handleSettingsApplied(settings, restart)
+        onSettingsApplied = { next, previous, restart ->
+          if (restart && c.isRunning) restartCapture(next, previous)
         }
       )
     }
@@ -72,6 +77,7 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
     OnDestroy {
       server.stop()
       capture?.stop()
+      context?.let { StreamingService.stop(it) }
       appContext.currentActivity?.let { act ->
         act.runOnUiThread {
           act.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -85,7 +91,14 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
       val s = store ?: throw IllegalStateException("Store not initialized")
 
       c.start(s.current, profile = "fmp4")
-      server.start(port)
+      try {
+        server.start(port)
+      } catch (e: Exception) {
+        c.stop()
+        throw e
+      }
+      // Keep the camera alive when the app goes to the background.
+      context?.let { StreamingService.start(it) }
 
       appContext.currentActivity?.let { act ->
         act.runOnUiThread {
@@ -100,6 +113,7 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
     AsyncFunction("stopServer") {
       server.stop()
       capture?.stop()
+      context?.let { StreamingService.stop(it) }
       appContext.currentActivity?.let { act ->
         act.runOnUiThread {
           act.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -124,15 +138,7 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
       val s = store ?: throw IllegalStateException("Store not initialized")
       val c = capture ?: throw IllegalStateException("Capture not initialized")
       val previous = s.current
-      val next = previous.copy(
-        resolution = previous.resolution.copy(),
-        cinematic = previous.cinematic.copy(),
-        blurFallback = previous.blurFallback.copy(),
-        exposure = previous.exposure.copy(),
-        focus = previous.focus.copy(),
-        whiteBalance = previous.whiteBalance.copy(),
-        audio = previous.audio.copy()
-      )
+      val next = previous.deepCopy()
 
       val issue = Routes.applyPatch(JSONObject(patch), next, c.capabilities())
       if (issue != null) {
@@ -142,13 +148,12 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
       s.replace(next)
       val restart = next.requiresRestart(previous)
       if (restart && c.isRunning) {
-        c.stop()
-        c.start(next, profile = "fmp4")
-      } else {
+        restartCapture(next, previous)
+      } else if (!restart) {
         c.applyLive(next)
       }
 
-      next.toMap()
+      s.current.toMap()
     }
 
     AsyncFunction("focusAt") { x: Double, y: Double ->
@@ -158,16 +163,14 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
     AsyncFunction("setLens") { lensId: String ->
       val s = store ?: throw IllegalStateException("Store not initialized")
       val c = capture ?: throw IllegalStateException("Capture not initialized")
-      val next = s.current
+      val previous = s.current
+      val next = previous.deepCopy()
       if (next.lockLens) {
         throw IllegalArgumentException("lens: Lens is locked")
       }
       next.lens = lensId
       s.replace(next)
-      if (c.isRunning) {
-        c.stop()
-        c.start(next, profile = "fmp4")
-      }
+      if (c.isRunning) restartCapture(next, previous)
       c.capabilities()
     }
 
@@ -182,20 +185,30 @@ class WebcamServerModule : Module(), HTTPServerDelegate, CaptureSessionControlle
     }
   }
 
-  private fun handleSettingsApplied(settings: Settings, restartRequired: Boolean) {
-    val c = capture ?: return
-    if (restartRequired && c.isRunning) {
-      Thread {
-        try {
-          c.stop()
-          c.start(settings, profile = "fmp4")
-        } catch (e: Exception) {
-          sendEvent(
-            "onError",
-            mapOf("code" to "capture_failed", "message" to (e.message ?: "Capture failed"), "fatal" to true)
-          )
-        }
-      }.start()
+  /**
+   * Rebuild the camera with new settings, synchronously. Every stream client is
+   * dropped first so it reconnects for the new init segment. If the new
+   * settings fail, the previous ones are put back so the phone never ends up
+   * with no camera.
+   */
+  private fun restartCapture(next: Settings, previous: Settings) {
+    val c = capture ?: throw IllegalStateException("Capture not initialized")
+    server.closeAllStreams("settings changed")
+    try {
+      c.start(next, profile = "fmp4")
+    } catch (e: Exception) {
+      Log.error("restart with new settings failed: ${e.message}")
+      store?.replace(previous)
+      try { c.start(previous, profile = "fmp4") } catch (_: Exception) {}
+      sendEvent(
+        "onError",
+        mapOf(
+          "code" to "capture_failed",
+          "message" to "Could not apply the new settings: ${e.message}",
+          "fatal" to false
+        )
+      )
+      throw e
     }
   }
 

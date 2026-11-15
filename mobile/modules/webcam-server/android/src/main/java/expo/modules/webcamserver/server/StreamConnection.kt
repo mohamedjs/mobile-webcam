@@ -17,8 +17,8 @@ class StreamConnection(
   private val outputStream: OutputStream = socket.getOutputStream()
   private val inFlight = AtomicBoolean(false)
   private var inFlightSince: Long = 0L
-  private var closed = false
-  private var sentInitSegment = false
+  @Volatile private var closed = false
+  @Volatile private var sentInitSegment = false
 
   var onClose: ((String, String) -> Unit)? = null
 
@@ -54,7 +54,7 @@ class StreamConnection(
     inFlight.set(true)
     inFlightSince = SystemClock.elapsedRealtime()
 
-    executor.submit {
+    try { executor.submit {
       try {
         if (!socket.isClosed) {
           outputStream.write(data)
@@ -67,6 +67,9 @@ class StreamConnection(
         inFlight.set(false)
         inFlightSince = 0L
       }
+    } } catch (_: java.util.concurrent.RejectedExecutionException) {
+      // Closed between the check above and the submit.
+      inFlight.set(false)
     }
   }
 

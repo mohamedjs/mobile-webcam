@@ -7,5 +7,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="true" />
+
+    <application>
+        <!-- Keeps the camera running while the app is in the background. -->
+        <service
+            android:name="expo.modules.webcamserver.support.StreamingService"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
+    </application>
 </manifest>

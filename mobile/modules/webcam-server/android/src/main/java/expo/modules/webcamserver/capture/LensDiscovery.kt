@@ -63,25 +63,34 @@ object LensDiscovery {
     )
   }
 
+  /**
+   * Sizes the encoder can take from this camera, with the real frame-rate limit
+   * of each (from the stream configuration's minimum frame duration, capped by
+   * the auto-exposure fps ranges). Never more than the hardware can do: the
+   * dashboard only offers what is returned here.
+   */
   fun resolutions(context: Context?, cameraId: String?): List<Map<String, Any>> {
     val manager = context?.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
-    val targetSizes = listOf(
-      Size(1280, 720) to 60,
-      Size(1920, 1080) to 60,
-      Size(3840, 2160) to 30
-    )
+    val targetSizes = listOf(Size(640, 480), Size(1280, 720), Size(1920, 1080), Size(3840, 2160))
 
     if (manager != null && cameraId != null) {
       try {
         val chars = manager.getCameraCharacteristics(cameraId)
         val map = chars.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
         val outputSizes = map?.getOutputSizes(MediaCodec::class.java)?.toSet() ?: emptySet()
+        val aeMax = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
+          ?.maxOfOrNull { it.upper } ?: 30
 
-        return targetSizes.mapNotNull { (sz, defaultFps) ->
-          if (outputSizes.contains(sz)) {
-            mapOf("width" to sz.width, "height" to sz.height, "maxFps" to defaultFps)
-          } else null
-        }.ifEmpty { defaultResolutions() }
+        val modes = targetSizes.mapNotNull { sz ->
+          if (!outputSizes.contains(sz)) return@mapNotNull null
+          val minDurationNs = try {
+            map?.getOutputMinFrameDuration(MediaCodec::class.java, sz) ?: 0L
+          } catch (_: Exception) { 0L }
+          val sensorMax = if (minDurationNs > 0) (1_000_000_000L / minDurationNs).toInt() else 30
+          val maxFps = minOf(sensorMax, aeMax).coerceAtLeast(1)
+          mapOf("width" to sz.width, "height" to sz.height, "maxFps" to maxFps)
+        }
+        if (modes.isNotEmpty()) return modes
       } catch (_: Exception) {}
     }
 
@@ -90,9 +99,8 @@ object LensDiscovery {
 
   private fun defaultResolutions(): List<Map<String, Any>> {
     return listOf(
-      mapOf("width" to 1280, "height" to 720, "maxFps" to 60),
-      mapOf("width" to 1920, "height" to 1080, "maxFps" to 60),
-      mapOf("width" to 3840, "height" to 2160, "maxFps" to 30)
+      mapOf("width" to 1280, "height" to 720, "maxFps" to 30),
+      mapOf("width" to 1920, "height" to 1080, "maxFps" to 30)
     )
   }
 }

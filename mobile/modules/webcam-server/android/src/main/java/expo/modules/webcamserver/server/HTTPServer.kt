@@ -71,6 +71,15 @@ class HTTPServer {
     Telemetry.shared.setClientsCount(0)
   }
 
+  /**
+   * Drop every streaming client. Used whenever the camera restarts: a client
+   * that already has the old init segment cannot decode the new stream, so it
+   * must reconnect and receive the new one.
+   */
+  fun closeAllStreams(reason: String) {
+    for ((_, stream) in streams) stream.close(reason)
+  }
+
   fun broadcast(data: ByteArray, isInit: Boolean = false) {
     for ((_, stream) in streams) {
       if (stream.profile != "mjpeg") {
