@@ -94,6 +94,8 @@ export class PipelineModule {
   get state(): PipelineState { return this.#state; }
   get degraded(): boolean { return this.#degraded; }
   get ffmpegStats() { return this.#ffmpeg.stats; }
+  /** Bytes received from the phone in the current fMP4 run (0 for MJPEG). */
+  get inputBytes(): number { return this.#streamProxy.bytes; }
   get platform(): 'ios' | 'android' { return this.#platform; }
 
   get profile(): StreamProfile {
@@ -514,6 +516,16 @@ export class PipelineModule {
 
   async shutdown(): Promise<void> {
     this.#clearResumeWatch();
+    // Quality lowered for heat is a temporary state of THIS session. The phone
+    // stores settings, so put the user's own quality back before leaving, or
+    // the next session starts at the lowered values.
+    const before = this.#preDegrade;
+    if (before) {
+      this.#preDegrade = null;
+      await this.#control
+        .applySettings({ resolution: before.resolution, fps: before.fps, bitrate: before.bitrate })
+        .catch((e) => this.#log.warn({ err: e }, 'could not restore quality on shutdown'));
+    }
     await this.#stopFfmpeg();
     await this.#placeholder.stop();
   }

@@ -320,9 +320,18 @@ if (!app.requestSingleInstanceLock()) {
     logStream = createWriteStream(logPath, { flags: 'a' });
     log(`Webcamo desktop ${app.getVersion()} (electron ${process.versions.electron}); log: ${logPath}`);
 
-    // The dashboard needs no browser permissions (camera, notifications, ...).
-    session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
-    session.defaultSession.setPermissionCheckHandler(() => false);
+    // The only browser permission the dashboard gets: video capture, so its
+    // preview can show the virtual camera. Never the microphone, never other
+    // origins, never anything else.
+    const isDashboard = (url) => { try { return new URL(url).origin === ORIGIN; } catch { return false; } };
+    session.defaultSession.setPermissionRequestHandler((wc, perm, cb, details) => {
+      const videoOnly = perm === 'media'
+        && Array.isArray(details?.mediaTypes) && details.mediaTypes.length > 0
+        && details.mediaTypes.every((t) => t === 'video');
+      cb(videoOnly && isDashboard(details?.requestingUrl || wc.getURL()));
+    });
+    session.defaultSession.setPermissionCheckHandler((_wc, perm, origin, details) =>
+      perm === 'media' && details?.mediaType === 'video' && isDashboard(origin));
 
     createWindow();
     createTray();

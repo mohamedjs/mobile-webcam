@@ -21,6 +21,7 @@ export class TelemetryModule {
   #timer: NodeJS.Timeout | null = null;
   #badStreak = 0;
   #coolStreak = 0;
+  #lastBytes = 0;
 
   constructor(deps: {
     log: Logger;
@@ -71,10 +72,17 @@ export class TelemetryModule {
       // Phone telemetry is best-effort; ffmpeg stats alone are still useful.
     }
 
+    // ffmpeg reports bitrate=N/A when writing to a device, so measure what
+    // actually arrives from the phone instead.
+    const bytes = this.#pipeline.inputBytes;
+    const delta = bytes >= this.#lastBytes ? bytes - this.#lastBytes : bytes;
+    this.#lastBytes = bytes;
+    const bitrate = bytes > 0 ? Math.round((delta * 8 * 1000) / SAMPLE_MS) : ff.bitrateKbits * 1000;
+
     const sample: MetricsSample = {
       at: Date.now(),
       fps: ff.fps,
-      bitrate: ff.bitrateKbits * 1000,
+      bitrate,
       droppedFrames: ff.droppedFrames,
       droppedSegments,
       latencyMs: null,
