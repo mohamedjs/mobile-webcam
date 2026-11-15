@@ -1,0 +1,87 @@
+{
+  "_note": "Web shots: the live landing page, and a neutral video-call page (call/) reading the virtual camera, fed by the real iPhone. Serve this folder on port 4181 first.",
+  "fps": 15,
+  "size": [
+    1440,
+    810
+  ],
+  "url": "http://127.0.0.1:4181/",
+  "clips": [
+    {
+      "id": "install",
+      "seconds": 12,
+      "path": "https://mohamedjs.github.io/mobile-webcam/",
+      "steps": [
+        {
+          "wait": 800
+        },
+        {
+          "eval": "document.getElementById('downloads')?.scrollIntoView({behavior:'smooth'})"
+        },
+        {
+          "wait": 1800
+        },
+        {
+          "move": "text=Download Installer (.exe)"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "move": "text=Apple Silicon (M1–M4)"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "move": "text=Download .deb Package"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "scroll": 560
+        },
+        {
+          "wait": 600
+        },
+        {
+          "move": "text=Download Android APK"
+        },
+        {
+          "wait": 1000
+        }
+      ]
+    },
+    {
+      "id": "meeting",
+      "seconds": 10,
+      "path": "call/index.html",
+      "before": "demo-phone/film-env.sh real",
+      "steps": [
+        {
+          "wait": 900
+        },
+        {
+          "move": "#cam"
+        },
+        {
+          "wait": 700
+        },
+        {
+          "eval": "pickWebcamo()"
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "move": ".stage"
+        },
+        {
+          "wait": 3000
+        }
+      ],
+      "after": "demo-phone/film-env.sh down"
+    }
+  ]
+}

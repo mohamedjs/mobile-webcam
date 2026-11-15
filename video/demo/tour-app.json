@@ -1,0 +1,113 @@
+{
+  "_note": "The real Webcamo desktop app (Electron) with the real iPhone over USB. Settings are isolated (XDG_CONFIG_HOME) and the phone's own settings are restored after each clip.",
+  "fps": 15,
+  "size": [
+    1440,
+    810
+  ],
+  "electron": {
+    "cwd": "../../desktop",
+    "args": [
+      "."
+    ],
+    "executablePath": "../../desktop/node_modules/electron/dist/electron",
+    "env": {
+      "XDG_CONFIG_HOME": "/tmp/webcamo-film/cfg-real"
+    }
+  },
+  "clips": [
+    {
+      "id": "connect",
+      "seconds": 12,
+      "before": "demo-phone/film-env.sh down; mkdir -p /tmp/webcamo-film/cfg-real/mobile_webcam && echo '{\"autoStart\":true}' > /tmp/webcamo-film/cfg-real/mobile_webcam/config.json",
+      "steps": [
+        {
+          "wait": 600
+        },
+        {
+          "move": "#pill-state"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "move": "#device-name"
+        },
+        {
+          "wait": 1800
+        },
+        {
+          "move": "#hud-res"
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "move": "#m-fps"
+        },
+        {
+          "wait": 1200
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "seconds": 22,
+      "before": "demo-phone/film-env.sh real",
+      "steps": [
+        {
+          "wait": 1500
+        },
+        {
+          "move": "#c-res"
+        },
+        {
+          "wait": 500
+        },
+        {
+          "eval": "(() => { const s = document.getElementById('c-res'); s.value = '1280x720'; s.dispatchEvent(new Event('change')); })()"
+        },
+        {
+          "wait": 4500
+        },
+        {
+          "move": "#m-res"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "move": "#c-fps"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "eval": "(() => { const s = document.getElementById('c-fps'); s.value = '30'; s.dispatchEvent(new Event('change')); })()"
+        },
+        {
+          "wait": 4000
+        },
+        {
+          "move": "#c-zoom"
+        },
+        {
+          "wait": 300
+        },
+        {
+          "eval": "(() => { const z = document.getElementById('c-zoom'); [1.4, 1.8, 2.2].forEach((val, i) => setTimeout(() => { z.value = val; z.dispatchEvent(new Event('input')); if (i === 2) z.dispatchEvent(new Event('change')); }, i * 300)); })()"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "move": "#preview-vid"
+        },
+        {
+          "wait": 1500
+        }
+      ],
+      "after": "curl -s -X PATCH -H 'Content-Type: application/json' -d '{\"resolution\":{\"width\":1920,\"height\":1080},\"fps\":24,\"lens\":\"back-wide\",\"zoom\":1}' http://127.0.0.1:47800/api/settings >/dev/null; sleep 4; demo-phone/film-env.sh down"
+    }
+  ]
+}

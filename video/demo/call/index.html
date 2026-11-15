@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Video call</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font: 15px/1.4 system-ui, sans-serif; background: #111318; color: #e8eaf0; height: 100vh; display: grid; grid-template-rows: 1fr auto; }
+  main { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 20px; min-height: 0; }
+  .stage { position: relative; background: #000; border-radius: 16px; overflow: hidden; display: grid; place-items: center; }
+  video { width: 100%; height: 100%; object-fit: cover; }
+  .name { position: absolute; left: 16px; bottom: 14px; background: rgba(0,0,0,.55); padding: 6px 12px; border-radius: 8px; }
+  .empty { position: absolute; color: #8a8f9c; }
+  aside { background: #1a1d24; border-radius: 16px; padding: 18px; }
+  aside h2 { margin: 0 0 12px; font-size: 15px; color: #aab0bd; font-weight: 600; }
+  label { display: block; margin: 14px 0 6px; color: #aab0bd; font-size: 13px; }
+  select { width: 100%; padding: 10px; border-radius: 10px; background: #111318; color: #e8eaf0; border: 1px solid #2c313c; font-size: 14px; }
+  footer { display: flex; justify-content: center; gap: 12px; padding: 0 0 20px; }
+  footer span { width: 52px; height: 52px; border-radius: 50%; background: #2c313c; display: grid; place-items: center; }
+  footer span.end { background: #d93a3a; width: 72px; border-radius: 26px; }
+</style></head>
+<body>
+<main>
+  <div class="stage"><video id="v" autoplay muted playsinline></video><div class="empty" id="empty">Camera off</div><div class="name">You</div></div>
+  <aside><h2>Settings</h2>
+    <label for="cam">Camera</label><select id="cam"><option value="">No camera</option></select>
+  </aside>
+</main>
+<footer><span>🎙</span><span>📷</span><span class="end">✕</span></footer>
+<script>
+const cam = document.getElementById('cam'), v = document.getElementById('v');
+async function list() {
+  const s = await navigator.mediaDevices.getUserMedia({ video: true }).catch(() => null);
+  s?.getTracks().forEach((t) => t.stop());
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput');
+  for (const d of devs) cam.add(new Option(d.label || 'Camera', d.deviceId));
+}
+cam.onchange = async () => {
+  v.srcObject?.getTracks().forEach((t) => t.stop());
+  if (!cam.value) { v.srcObject = null; document.getElementById('empty').hidden = false; return; }
+  v.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: cam.value }, width: 1920, height: 1080 } });
+  document.getElementById('empty').hidden = true;
+};
+// Filming helper: pick the Webcamo virtual camera ("Mobile Webcam").
+window.pickWebcamo = () => {
+  const o = [...cam.options].find((x) => /mobile webcam|webcamo/i.test(x.text));
+  if (o) { cam.value = o.value; cam.dispatchEvent(new Event('change')); }
+};
+list();
+</script>
+</body></html>

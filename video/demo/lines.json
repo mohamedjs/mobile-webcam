@@ -1,0 +1,57 @@
+[
+ {
+  "id": "n1",
+  "text": "ده Webcamo. وصّل موبايلك بالكابل، يبقى كاميرا ويب بجودة عالية، على لينكس والماك وويندوز.",
+  "style": "warm, confident intro, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n2",
+  "text": "[sighs] كاميرا اللابتوب غالبًا صورتها باهتة ومليانة نويز، وأبلكيشنات الواي فاي بتهنّج وبتفصل في نص الميتنج.",
+  "style": "relatable, a little tired, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n3",
+  "text": "مع إن الموبايل اللي في جيبك، كاميرته أحسن بكتير من أي كاميرا لابتوب.",
+  "style": "light, a bit playful, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n4",
+  "text": "الفكرة بسيطة: الموبايل نفسه بيشغّل سيرفر صغير، ويعمل encode للصورة بالـ hardware، والكمبيوتر بيسحب الستريم على كابل الـ USB. من غير إنترنت، ومن غير أكونت، ومن غير cloud.",
+  "style": "clear, explaining, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n5",
+  "text": "وعلى الكمبيوتر، Webcamo بيحوّل الستريم لكاميرا افتراضية، تشوفها أي أبلكيشن، سواء Zoom أو Meet أو OBS، كأنها كاميرا عادية.",
+  "style": "clear, confident, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n6",
+  "text": "التسطيب سهل: ملف Setup لويندوز، وملف dmg للماك، وملف deb أو AppImage للينكس. وعلى الموبايل، أبلكيشن Webcamo لأندرويد والآيفون.",
+  "style": "practical, upbeat, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n7",
+  "text": "افتح Webcamo على الكمبيوتر ووصّل الموبايل. البرنامج بيلاقيه لوحده، ويفتح الاتصال، ويبدأ الستريم.",
+  "style": "guiding, calm, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n8",
+  "text": "ومن الداشبورد بتتحكم في كل حاجة: الريزوليوشن، والفريمات، والعدسة، والزوم، والإضاءة. وبتغيّرهم وإنت لايف، والكاميرا ما بتختفيش من عند الناس.",
+  "style": "confident, showing off a little, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n9",
+  "text": "[serious] ولو الكابل اتشد، أو الموبايل سخن، Webcamo بيرجع لوحده، وبيقلل الجودة لحد ما الموبايل يبرد، وبعدها يرجّعها زي ما كانت.",
+  "style": "reassuring, steady, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n10",
+  "text": "وفي الميتنج، بتختار Webcamo من قايمة الكاميرات، وخلاص كده.",
+  "style": "light, satisfied, natural brisk conversational pace, no long pauses"
+ },
+ {
+  "id": "n11",
+  "text": "[excited] Webcamo. موبايلك بقى كاميرتك. حمّله دلوقتي من الصفحة دي.",
+  "style": "warm, upbeat outro, natural brisk conversational pace, no long pauses"
+ }
+]

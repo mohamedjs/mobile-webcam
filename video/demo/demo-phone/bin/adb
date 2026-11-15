@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Filming only: pretends one Android phone is plugged in. The "phone" is
+# fakephone.mjs on 127.0.0.1:18080, so `adb forward` has nothing to do.
+args=("$@"); [ "${args[0]}" = "-s" ] && args=("${args[@]:2}")
+case "${args[0]}" in
+  devices) printf 'List of devices attached\n'
+           # "Plugged in" only once film-env.sh plug has run.
+           [ -e "${WEBCAMO_DEMO_DIR:-/tmp/webcamo-film}/plugged" ] && printf 'DEMO0001\tdevice\n'
+           printf '\n' ;;
+  version) echo "Android Debug Bridge version 1.0.41 (demo shim)" ;;
+  shell)   case "${args[*]}" in
+             *ro.product.model*) echo "Pixel 9 Pro" ;;
+             *ro.build.version.release*) echo "16" ;;
+           esac ;;
+  forward) [ "${args[1]}" = "--list" ] && echo "DEMO0001 tcp:18080 tcp:8080" ;;
+esac
+exit 0

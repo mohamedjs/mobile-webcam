@@ -1,0 +1,10 @@
+node_modules/
+out/
+clips/
+raw/
+vo/
+audio/
+preview/
+*.mp4
+timing.json
+tour_state.json

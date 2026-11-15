@@ -1,0 +1,58 @@
+{
+  "brand": { "logo": "img/logo.png", "accent": "#2563eb", "dark": "#1e2433", "flow": "#0ea5e9" },
+  "scenes": [
+    { "id": "title", "type": "title", "vo": "n1", "title": "Webcamo", "sub": "موبايلك يبقى كاميرا ويب، بالكابل",
+      "tiles": [ { "icon": "ubuntu", "text": "Linux" }, { "icon": "apple", "text": "macOS" },
+                 { "icon": "windows", "text": "Windows" }, { "icon": "usb", "text": "كابل USB" } ] },
+
+    { "id": "problem", "type": "bullets", "vo": ["n2", "n3"], "title": "المشكلة", "icon": "emotion-unhappy",
+      "items": [
+        { "icon": "camera-off", "text": "كاميرا اللابتوب ضعيفة", "sub": "صورة باهتة ومليانة نويز" },
+        { "icon": "wifi-off", "text": "الواي فاي بيخذلك", "sub": "تهنيج وفصل في نص الميتنج" },
+        { "icon": "smartphone", "text": "والحل في جيبك", "sub": "كاميرا الموبايل أحسن بكتير" } ] },
+
+    { "id": "how", "type": "diagram", "vo": ["n4", "n5"], "title": "بيشتغل إزاي", "icon": "flow-chart",
+      "sub": "الموبايل هو السيرفر، والكمبيوتر بيسحب منه",
+      "nodes": [
+        { "id": "phone", "label": "الموبايل", "icon": "smartphone", "tech": "H.264 · fMP4 · port 8080", "x": 1640, "y": 420 },
+        { "id": "usb", "label": "كابل USB", "icon": "usb", "tech": "iproxy · adb forward", "x": 1140, "y": 420 },
+        { "id": "desk", "label": "Webcamo على الكمبيوتر", "icon": "computer", "tech": "Node.js · ffmpeg", "x": 640, "y": 420 },
+        { "id": "cam", "label": "كاميرا افتراضية", "icon": "webcam", "tech": "v4l2loopback", "x": 640, "y": 780 },
+        { "id": "apps", "label": "البرامج", "icon": "vidicon", "tech": "Zoom · Meet · OBS", "x": 1140, "y": 780 } ],
+      "edges": [
+        { "from": "phone", "to": "usb" }, { "from": "usb", "to": "desk" },
+        { "from": "desk", "to": "cam" }, { "from": "cam", "to": "apps" } ],
+      "flow": [
+        { "from": "phone", "to": "usb", "text": "الموبايل بيعمل encode بالـ hardware ويشغّل سيرفر صغير", "vo": "n4" },
+        { "from": "usb", "to": "desk", "text": "الكمبيوتر بيسحب الستريم على الكابل، من غير إنترنت" },
+        { "from": "desk", "to": "cam", "text": "Webcamo بيحوّل الستريم لكاميرا افتراضية", "vo": "n5" },
+        { "from": "cam", "to": "apps", "text": "وأي برنامج يشوفها كاميرا عادية" } ] },
+
+    { "id": "install", "type": "shot", "vo": "n6", "clip": "install", "fps": 15, "frame": "screen",
+      "title": "التسطيب", "icon": "download-2",
+      "points": [ { "icon": "computer", "text": "ويندوز وماك ولينكس" }, { "icon": "smartphone", "text": "أبلكيشن لأندرويد والآيفون" } ] },
+
+    { "id": "connect", "type": "shot", "vo": "n7", "clip": "connect", "fps": 15, "frame": "screen",
+      "title": "وصّل وابدأ", "icon": "plug",
+      "points": [ { "icon": "search-eye", "text": "بيلاقي الموبايل لوحده" }, { "icon": "live", "text": "والستريم بيبدأ على طول" } ] },
+
+    { "id": "settings", "type": "shot", "vo": "n8", "clip": "settings", "fps": 15, "frame": "screen",
+      "title": "تحكّم وإنت لايف", "icon": "equalizer-2",
+      "points": [ { "icon": "hd", "text": "الريزوليوشن والفريمات والزوم" }, { "icon": "eye", "text": "الكاميرا ما بتختفيش من الميتنج" } ] },
+
+    { "id": "reliable", "type": "bullets", "vo": "n9", "title": "بيرجع لوحده", "icon": "shield-check",
+      "items": [
+        { "icon": "plug", "text": "الكابل اتشد؟", "sub": "بيوصل تاني من غير ما تعمل حاجة" },
+        { "icon": "temp-hot", "text": "الموبايل سخن؟", "sub": "بيقلل الجودة لحد ما يبرد" },
+        { "icon": "restart", "text": "وبعدها", "sub": "بيرجّع الجودة زي ما كانت" } ] },
+
+    { "id": "meeting", "type": "shot", "vo": "n10", "clip": "meeting", "fps": 15, "frame": "screen",
+      "title": "في الميتنج", "icon": "vidicon",
+      "points": [ { "icon": "list-check", "text": "اختار الكاميرا من القايمة" } ] },
+
+    { "id": "outro", "type": "outro", "vo": "n11", "title": "Webcamo", "sub": "موبايلك بقى كاميرتك",
+      "tiles": [ { "icon": "ubuntu", "text": "Linux" }, { "icon": "apple", "text": "macOS" },
+                 { "icon": "windows", "text": "Windows" }, { "icon": "github", "text": "GitHub" } ],
+      "url": "mohamedjs.github.io/mobile-webcam" }
+  ]
+}

@@ -23,9 +23,9 @@ const T = {
     "hero.mobileNotice": "Webcamo desktop app runs on your computer — install the mobile app below.",
     "hero.version": "Version {v} · 100% Local & Free",
 
-    "video.badge": "Watch Keynote",
-    "video.title": "DSLR-Grade Video with Zero Cloud Latency",
-    "video.sub": "Watch how Webcamo hardware-encodes 4K60 directly on iPhone & Android, streaming raw H.264 over USB into Zoom, Meet, Teams, and OBS.",
+    "video.badge": "Watch the demo",
+    "video.title": "See it working with a real iPhone",
+    "video.sub": "A 100-second tour, filmed from the real app: plug in the phone, it connects by itself, change resolution and zoom live, then pick Webcamo in your call. Narrated in Egyptian Arabic.",
 
     "dl.title": "Download Webcamo",
     "dl.sub": "Free, open source, and private. Connect with a USB cable for crystal-clear video and synchronized microphone.",
@@ -113,9 +113,9 @@ const T = {
     "hero.mobileNotice": "تطبيق ويبكامو المكتبي يعمل على الكمبيوتر — حمّل تطبيق الموبايل بالأسفل.",
     "hero.version": "الإصدار {v} · مجاني ومحلي 100%",
 
-    "video.badge": "العرض التقديمي",
-    "video.title": "جودة كاميرات احترافية مع انعدام التأخير السحابي",
-    "video.sub": "شاهد كيف يقوم ويبكامو بتشفير 4K60 عتادياً مباشرة على آيفون وأندرويد وبث H.264 عبر USB لبرامج Zoom و Meet و Teams و OBS.",
+    "video.badge": "شوف الديمو",
+    "video.title": "شغّال قدامك بآيفون حقيقي",
+    "video.sub": "جولة في 100 ثانية، متصوّرة من البرنامج الحقيقي: توصّل الموبايل فيتوصل لوحده، تغيّر الريزوليوشن والزوم وإنت لايف، وتختار Webcamo في المكالمة.",
 
     "dl.title": "تحميل ويبكامو",
     "dl.sub": "مجاني ومفتوح المصدر وخاص تماماً. وصّل الموبايل بكابل USB واستمتع بكاميرا ومايكروفون عالي النقاء.",
@@ -245,22 +245,11 @@ function applyLanguage(lang) {
   const langBtn = $("#btn-lang-toggle");
   if (langBtn) langBtn.textContent = lang === "ar" ? "English" : "العربية";
 
-  // Switch keynote and hero videos to current language
-  const video = $("#intro");
+  // The hero loop follows the language; the narrated demo (#intro) is one
+  // video for both languages, so it is never reloaded here.
   const heroVid = $("#hero-preview-vid");
   const mp4Src = `./assets/intro-${lang}.mp4`;
   const posterSrc = `./assets/intro-${lang}.jpg`;
-
-  if (video) {
-    video.poster = posterSrc;
-    if (!video.src.endsWith(`intro-${lang}.mp4`)) {
-      const playing = !video.paused;
-      const cur = video.currentTime;
-      video.src = mp4Src;
-      video.currentTime = cur;
-      if (playing) video.play().catch(() => {});
-    }
-  }
 
   if (heroVid) {
     heroVid.poster = posterSrc;
@@ -406,4 +395,10 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#btn-theme-toggle")?.addEventListener("click", () => {
     applyTheme(currentTheme === "dark" ? "light" : "dark");
   });
+});
+
+// If the demo video is missing (e.g. not deployed yet), hide its section
+// rather than showing a broken player.
+document.getElementById("intro-src")?.addEventListener("error", () => {
+  document.getElementById("demo")?.setAttribute("hidden", "");
 });

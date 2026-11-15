@@ -1,0 +1,11 @@
+{
+ "name": "webcamo-demo-video",
+ "private": true,
+ "description": "The Webcamo product demo video: real footage of the desktop app on a deterministic HTML stage, rendered frame by frame.",
+ "devDependencies": {
+  "playwright": "1.64.1",
+  "remixicon": "4.9.1",
+  "@fontsource/tajawal": "5.3.0",
+  "@fontsource/inter": "5.2.8"
+ }
+}
