@@ -244,22 +244,6 @@ function applyLanguage(lang) {
 
   const langBtn = $("#btn-lang-toggle");
   if (langBtn) langBtn.textContent = lang === "ar" ? "English" : "العربية";
-
-  // The hero loop follows the language; the narrated demo (#intro) is one
-  // video for both languages, so it is never reloaded here.
-  const heroVid = $("#hero-preview-vid");
-  const mp4Src = `./assets/intro-${lang}.mp4`;
-  const posterSrc = `./assets/intro-${lang}.jpg`;
-
-  if (heroVid) {
-    heroVid.poster = posterSrc;
-    if (!heroVid.src.endsWith(`intro-${lang}.mp4`)) {
-      const cur = heroVid.currentTime;
-      heroVid.src = mp4Src;
-      heroVid.currentTime = cur;
-      heroVid.play().catch(() => {});
-    }
-  }
 }
 
 function applyTheme(theme) {
