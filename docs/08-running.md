@@ -55,6 +55,27 @@ npm run doctor
 Everything should read `[PASS]`. Anything that does not comes with the exact
 command to fix it on the next line.
 
+### 2.1a Desktop app (Electron)
+
+`desktop/` wraps the dashboard in a normal desktop window for Linux, Windows
+and macOS. It starts the same daemon in the background (or attaches to one that
+is already running, such as the systemd service) and shows its dashboard, with
+a tray icon. ffmpeg, adb, iproxy and v4l2loopback are still installed on the
+host as above; the app does not bundle them.
+
+```bash
+npm run build                 # the server bundle, from the repository root
+cd desktop
+npm install                   # behind npmmirror: ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+npm start                     # run it
+npm run dist                  # AppImage + .deb on Linux, .exe on Windows, .dmg on macOS (into desktop/release/)
+```
+
+`WEBCAMO_SELFTEST=1 npm start` launches the app, checks that the dashboard
+loads and its live connection works, prints `PASS` or `FAIL`, and quits. CI
+builds the installers for all three systems on every push (job
+`electron-app`); they are unsigned.
+
 ### 2.2 Build the iPhone app
 
 **Expo Go will not work.** The app opens a listening TCP socket and drives

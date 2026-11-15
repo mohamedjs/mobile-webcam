@@ -11,3 +11,4 @@ mobile/android/
 !mobile/modules/webcam-server/android/
 .expo/
 
+desktop/release/

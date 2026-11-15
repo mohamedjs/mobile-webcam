@@ -1,0 +1,92 @@
+{
+  "name": "webcamo-desktop",
+  "productName": "Webcamo",
+  "version": "0.1.0",
+  "description": "Webcamo desktop app: control dashboard for the Webcamo phone-as-webcam daemon",
+  "homepage": "https://mohamedjs.github.io/mobile-webcam/",
+  "desktopName": "webcamo-desktop.desktop",
+  "private": true,
+  "main": "src/main.js",
+  "author": {
+    "name": "Webcamo",
+    "email": "webcamo@users.noreply.github.com"
+  },
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node scripts/check-bundle.js && npm run build && electron .",
+    "dist": "node scripts/check-bundle.js && npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.webcamo.desktop",
+    "productName": "Webcamo",
+    "publish": null,
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../server/dist/webcamo-bundle.cjs",
+        "to": "server/webcamo-bundle.cjs"
+      },
+      {
+        "from": "../server/dist/static",
+        "to": "server/static"
+      }
+    ],
+    "icon": "build/icon.png",
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Video",
+      "maintainer": "Webcamo <webcamo@users.noreply.github.com>",
+      "synopsis": "Use your phone as a webcam",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "syncDesktopName": true
+    },
+    "deb": {
+      "packageName": "webcamo-desktop"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.video",
+      "identity": null,
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  }
+}

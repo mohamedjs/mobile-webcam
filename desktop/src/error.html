@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'">
+<title>Webcamo</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f9; --fg: #1d2330; --muted: #667085; --accent: #4f6bed; --card: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14171f; --fg: #e6e8ee; --muted: #98a2b3; --card: #1d212b; } }
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; background: var(--bg); color: var(--fg);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 0 16px; }
+  .box { max-width: 560px; background: var(--card); padding: 28px; border-radius: 14px; box-shadow: 0 1px 3px #0002; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  code { display: block; padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--fg) 8%, transparent);
+         word-break: break-all; font-size: 13px; user-select: all; }
+  .row { display: flex; gap: 8px; margin-top: 18px; }
+  button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--accent); cursor: pointer;
+           background: transparent; color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>Webcamo could not start</h1>
+    <p id="reason"></p>
+    <p class="muted">The daemon's output is in this log file:</p>
+    <code id="log"></code>
+    <p class="muted">Run <b>webcamo doctor</b> to check ffmpeg, adb and the virtual video/audio devices.</p>
+    <div class="row">
+      <button class="primary" id="retry">Retry</button>
+      <button id="open">Show log file</button>
+    </div>
+  </div>
+<script>
+  const q = new URLSearchParams(location.search);
+  document.getElementById('reason').textContent = q.get('reason') || 'The Webcamo daemon failed to start.';
+  document.getElementById('log').textContent = q.get('log') || '(unknown)';
+  document.getElementById('retry').onclick = () => window.webcamoDesktop.retry();
+  document.getElementById('open').onclick = () => window.webcamoDesktop.openLog();
+</script>
+</body>
+</html>

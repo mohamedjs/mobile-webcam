@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'">
+<title>Webcamo</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f9; --fg: #1d2330; --muted: #667085; --accent: #4f6bed; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #14171f; --fg: #e6e8ee; --muted: #98a2b3; } }
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; background: var(--bg); color: var(--fg);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .box { text-align: center; }
+  img { width: 96px; height: 96px; border-radius: 22px; }
+  .spin { width: 22px; height: 22px; margin: 20px auto 8px; border: 3px solid color-mix(in srgb, var(--accent) 25%, transparent);
+          border-top-color: var(--accent); border-radius: 50%; animation: s .8s linear infinite; }
+  p { color: var(--muted); margin: 0; }
+  @keyframes s { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="box">
+    <img src="../assets/icon.png" alt="">
+    <div class="spin"></div>
+    <p>Starting Webcamo…</p>
+  </div>
+</body>
+</html>
