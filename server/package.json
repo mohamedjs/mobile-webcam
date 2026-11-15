@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
-    "test": "npm run build && node --test --experimental-strip-types test/**/*.test.ts"
+    "test": "npm run build && node --test --test-force-exit --test-timeout=180000 --experimental-strip-types test/**/*.test.ts"
   },
   "dependencies": {
     "@mobile-webcam/shared": "*",

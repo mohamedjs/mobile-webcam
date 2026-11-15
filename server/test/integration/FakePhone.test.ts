@@ -4,12 +4,19 @@
 // /settings, /stream.mp4) and streams real fragmented MP4 made by ffmpeg, so the
 // desktop's proxy, ffmpeg supervision and restart logic all run for real. Only
 // the output goes to a null sink instead of /dev/video9.
-import { test, after } from 'node:test';
+import { test as nodeTest, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { spawn, type ChildProcess } from 'node:child_process';
 import type { AddressInfo } from 'node:net';
 import { DEFAULT_SETTINGS, PROTOCOL_VERSION } from '@mobile-webcam/shared';
+import { spawnSync } from 'node:child_process';
+
+// Needs a real ffmpeg (with libx264) for the fake phone's stream. Skip, don't
+// hang, on machines without it.
+const HAS_FFMPEG = spawnSync('ffmpeg', ['-hide_banner', '-encoders'], { encoding: 'utf8' }).stdout?.includes('libx264') ?? false;
+const test = (name: string, fn: () => Promise<void> | void) =>
+  nodeTest(name, { skip: HAS_FFMPEG ? false : 'ffmpeg with libx264 not installed' }, fn);
 import { EventBus } from '../../dist/kernel/events/EventBus.js';
 import { createLogger } from '../../dist/kernel/logging/logger.js';
 import { DEFAULT_CONFIG } from '../../dist/modules/config/index.js';
@@ -148,7 +155,7 @@ class FakePhone {
 // ---------------------------------------------------------------- the desktop
 
 const phone = new FakePhone();
-await phone.listen();
+if (HAS_FFMPEG) await phone.listen();
 
 const log = createLogger({ level: process.env.TEST_LOG ?? 'silent', pretty: false });
 const bus = new EventBus(log);
@@ -179,6 +186,7 @@ const errors: string[] = [];
 bus.on('pipeline.error', (e) => errors.push(`${e.code}: ${e.message}`));
 
 after(async () => {
+  if (!HAS_FFMPEG) return;
   await pipeline.shutdown();
   await phone.close();
 });
