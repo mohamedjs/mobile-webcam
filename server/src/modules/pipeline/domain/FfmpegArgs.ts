@@ -54,13 +54,14 @@ export function buildFfmpegArgs(input: FfmpegBuildInput): string[] {
     args.push('-headers', `Authorization: Bearer ${token}\r\n`);
   }
 
+  // Decoder options. They MUST come before -i: after it they apply to the
+  // output and the decoder silently falls back to frame threading, which
+  // holds back one frame per thread (12 on a 12-core laptop): ~400 ms of
+  // delay at 30 fps, measured. Slice threading adds none.
+  args.push('-threads', '4', '-thread_type', 'slice', '-flags:v', 'low_delay');
+
   const path = profile === 'mjpeg' ? '/stream.mjpeg' : '/stream.mp4';
   args.push('-i', `${baseUrl}${path}`);
-
-  // Slice threading: decode slices of ONE frame in parallel across cores.
-  // Unlike the default "frame" threading (which holds N frames to reorder),
-  // slice threading adds zero latency — and easily handles 1080p30.
-  args.push('-threads', '4', '-thread_type', 'slice', '-flags:v', 'low_delay');
 
   // --- video ---
   args.push('-map', '0:v:0');

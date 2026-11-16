@@ -9,7 +9,7 @@ import { NativeWindowLauncher } from './modules/window/infrastructure/NativeWind
 
 const run = promisify(execFile);
 
-const WEBCAMO_VERSION = '0.2.1';
+const WEBCAMO_VERSION = '0.2.2';
 
 async function getVersion(): Promise<string> {
   return process.env.WEBCAMO_VERSION ?? WEBCAMO_VERSION;
