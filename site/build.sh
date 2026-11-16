@@ -7,7 +7,8 @@ OUT="$ROOT/_site"
 rm -rf "$OUT"
 mkdir -p "$OUT/assets"
 
-cp "$ROOT/site/index.html" "$ROOT/site/site.css" "$ROOT/site/site.js" "$OUT/"
+cp "$ROOT/site/index.html" "$ROOT/site/site.css" "$ROOT/site/site.js" "$ROOT/site/notebook.css" "$ROOT/site/marks.js" "$ROOT/site/NOTICE.txt" "$OUT/"
+cp -r "$ROOT/site/fonts" "$OUT/"
 cp -r "$ROOT/site/assets/"* "$OUT/assets/"
 
 # Bake latest release metadata if available; otherwise write fallback release.json
