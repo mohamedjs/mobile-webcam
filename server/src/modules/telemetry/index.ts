@@ -98,10 +98,12 @@ export class TelemetryModule {
   }
 
   async #evaluate(sample: MetricsSample): Promise<void> {
-    // Only heat lowers quality. ffmpeg's drop= counter also counts frames it
-    // skips to stay real-time, so acting on it kept lowering the resolution of
-    // healthy streams for good.
-    const thermal = sample.thermalState === 'serious' || sample.thermalState === 'critical';
+    // Only heat lowers quality, and only at "critical". ffmpeg's drop= counter
+    // also counts frames it skips to stay real-time, so acting on it kept
+    // lowering healthy streams for good. At "serious" iOS already throttles
+    // the phone itself; every step down here restarts the phone's camera, and
+    // on older iPhone builds that restart crashed the system media daemon.
+    const thermal = sample.thermalState === 'critical';
 
     if (!thermal) {
       this.#badStreak = 0;

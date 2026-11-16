@@ -26,6 +26,12 @@ final class FragmentedMP4Writer: NSObject {
 
   private(set) var initializationSegment: Data?
 
+  /// The writer whose segments are current. Guarded by its own lock, not the
+  /// writer queue: the delegate is called from the system's writing thread
+  /// while stopLocked() may be waiting on the queue.
+  private let currentLock = NSLock()
+  private weak var currentWriter: AVAssetWriter?
+
   var isRunning: Bool { queue.sync { writer?.status == .writing } }
 
   func start(
@@ -67,6 +73,7 @@ final class FragmentedMP4Writer: NSObject {
         throw w.error ?? WriterError.startFailed
       }
       writer = w
+      currentLock.lock(); currentWriter = w; currentLock.unlock()
       started = false
       reportedFailure = false
       initializationSegment = nil
@@ -116,13 +123,25 @@ final class FragmentedMP4Writer: NSObject {
   func stop() { queue.sync { stopLocked() } }
 
   private func stopLocked() {
+    // From here on, segments from this writer are stale and are dropped.
+    currentLock.lock(); currentWriter = nil; currentLock.unlock()
     guard let writer, writer.status == .writing else {
       self.writer = nil
       return
     }
     videoInput?.markAsFinished()
     audioInput?.markAsFinished()
-    writer.finishWriting {}
+    // Keep the writer alive until the system media daemon has finished with
+    // it, and do not start the next one before that. Releasing it while the
+    // daemon was still delivering segments crashed mediaplaybackd
+    // (xpc_connection_send_message API misuse in
+    // assetWriter_FormatWriterSegmentCallback), which killed the camera on
+    // every resolution / fps / lens change and on every heat-driven change.
+    let finished = DispatchSemaphore(value: 0)
+    writer.finishWriting { finished.signal() }
+    if finished.wait(timeout: .now() + 2) == .timedOut {
+      Log.warn("asset writer did not finish within 2 s")
+    }
     self.writer = nil
     videoInput = nil
     audioInput = nil
@@ -149,6 +168,8 @@ extension FragmentedMP4Writer: AVAssetWriterDelegate {
     segmentType: AVAssetSegmentType,
     segmentReport: AVAssetSegmentReport?
   ) {
+    currentLock.lock(); let current = currentWriter === writer; currentLock.unlock()
+    guard current else { return }   // a late segment from a writer being stopped
     let isInit = segmentType == .initialization
     if isInit { initializationSegment = segmentData }
     Telemetry.shared.recordFrame(bytes: segmentData.count)

@@ -28,6 +28,9 @@ enum EncoderSettings {
     ]
   }
 
-  /// 33 ms: one fragment per frame at 30fps for minimal latency over USB.
-  static let segmentDuration = CMTime(value: 22, timescale: 1000)
+  /// 100 ms fragments. AVAssetWriter hands every fragment over XPC from the
+  /// system media daemon; at 22 ms (~45 a second) that daemon ran at ~73% CPU
+  /// and was the main reason the phone overheated. 100 ms keeps the added
+  /// latency small and cuts that traffic by more than four times.
+  static let segmentDuration = CMTime(value: 100, timescale: 1000)
 }
