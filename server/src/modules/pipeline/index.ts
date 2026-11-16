@@ -88,6 +88,7 @@ export class PipelineModule {
       this.#udid = e.udid;
       this.#deviceAttached = true;
       this.#readyErrorShown = false;
+      this.#phoneSendsNoAudio = false;
       void this.#onDeviceConnected();
     });
     this.#bus.on('device.disconnected', () => {
@@ -158,6 +159,8 @@ export class PipelineModule {
   }
 
   #deviceAttached = false;
+  /** Set when the phone's stream turned out to carry no audio track. */
+  #phoneSendsNoAudio = false;
   #readyErrorShown = false;
   #readyRetry: NodeJS.Timeout | null = null;
 
@@ -228,7 +231,8 @@ export class PipelineModule {
 
     // Audio only when the phone can actually send it (Android cannot yet).
     const audioSupported = this.#control.capabilities?.audio.supported !== false;
-    const withAudio = settings.audio.enabled && audioSupported && this.profile === 'fmp4';
+    const withAudio = settings.audio.enabled && audioSupported && this.profile === 'fmp4'
+      && !this.#phoneSendsNoAudio;
     if (withAudio) await this.#audio.ensure();
 
     // Scale to what the device REALLY is, not what we asked for. A mismatch
@@ -320,6 +324,26 @@ export class PipelineModule {
     if (generation !== this.#generation || this.#restarting) return;
     await this.#streamProxy.stop();
     this.#log.warn({ reason }, 'ffmpeg exited');
+
+    // The phone's stream has no audio track (e.g. microphone permission not
+    // granted yet). The audio output then has nothing to write and ffmpeg
+    // refuses to start at all. Carry on with video only instead of failing.
+    if (!this.#phoneSendsNoAudio && /does not contain any stream/i.test(reason)) {
+      this.#phoneSendsNoAudio = true;
+      this.#log.warn('the phone is sending no audio; streaming video only');
+      this.#bus.emit({
+        type: 'pipeline.error',
+        code: 'no_audio',
+        message: 'The phone is sending video without sound. To use its microphone, allow '
+          + 'Microphone for Webcamo in the phone\'s Settings, then restart the app.',
+        fatal: false,
+      });
+      if (this.#state === 'STREAMING') {
+        this.#transition('READY');
+        await this.start().catch((e) => this.#log.error({ err: e }, 'restart without audio failed'));
+      }
+      return;
+    }
     if (this.#state !== 'STREAMING') return;
     this.#transition('READY');
 
