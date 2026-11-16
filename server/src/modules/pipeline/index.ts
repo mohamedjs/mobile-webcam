@@ -86,9 +86,15 @@ export class PipelineModule {
     this.#bus.on('device.connected', (e) => {
       this.#platform = e.platform ?? 'ios';
       this.#udid = e.udid;
+      this.#deviceAttached = true;
+      this.#readyErrorShown = false;
       void this.#onDeviceConnected();
     });
-    this.#bus.on('device.disconnected', () => void this.#onDeviceDisconnected());
+    this.#bus.on('device.disconnected', () => {
+      this.#deviceAttached = false;
+      this.#clearReadyRetry();
+      void this.#onDeviceDisconnected();
+    });
   }
 
   get state(): PipelineState { return this.#state; }
@@ -117,6 +123,7 @@ export class PipelineModule {
   // ---------------------------------------------------------------- lifecycle
 
   async #onDeviceConnected(): Promise<void> {
+    this.#clearReadyRetry();
     try {
       this.#transition('TUNNELING');
       await this.#tunnel.open({ platform: this.#platform, udid: this.#udid ?? '' });
@@ -124,14 +131,40 @@ export class PipelineModule {
       this.#transition('READY');
       if (this.#config.autoStart) await this.start();
     } catch (e) {
-      this.#log.error({ err: e }, 'failed to reach READY');
-      this.#bus.emit({
-        type: 'pipeline.error',
-        code: AppError.is(e) ? e.code : 'internal',
-        message: e instanceof Error ? e.message : String(e),
-        fatal: false,
-      });
+      // Report once per plug-in; the retries below are silent.
+      if (!this.#readyErrorShown) {
+        this.#readyErrorShown = true;
+        this.#log.error({ err: e }, 'failed to reach READY');
+        this.#bus.emit({
+          type: 'pipeline.error',
+          code: AppError.is(e) ? e.code : 'internal',
+          message: e instanceof Error ? e.message : String(e),
+          fatal: false,
+        });
+      }
       await this.#fallBackToNoDevice();
+      // The cable is still in; the app on the phone is just not serving yet
+      // (closed, backgrounded, server not started). Discovery only reports a
+      // device when it is plugged in, so without this the desktop stayed at
+      // NO_DEVICE until the cable was pulled and plugged in again.
+      const protocolMismatch = AppError.is(e) && e.code === 'protocol_mismatch';
+      if (this.#deviceAttached && !protocolMismatch) {
+        this.#readyRetry = setTimeout(() => {
+          this.#readyRetry = null;
+          if (this.#deviceAttached && this.#state === 'NO_DEVICE') void this.#onDeviceConnected();
+        }, 3000);
+      }
+    }
+  }
+
+  #deviceAttached = false;
+  #readyErrorShown = false;
+  #readyRetry: NodeJS.Timeout | null = null;
+
+  #clearReadyRetry(): void {
+    if (this.#readyRetry) {
+      clearTimeout(this.#readyRetry);
+      this.#readyRetry = null;
     }
   }
 
@@ -516,6 +549,8 @@ export class PipelineModule {
 
   async shutdown(): Promise<void> {
     this.#clearResumeWatch();
+    this.#clearReadyRetry();
+    this.#deviceAttached = false;
     // Quality lowered for heat is a temporary state of THIS session. The phone
     // stores settings, so put the user's own quality back before leaving, or
     // the next session starts at the lowered values.
