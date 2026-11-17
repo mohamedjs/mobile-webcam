@@ -124,7 +124,7 @@ const T = {
 
     "video.kick": "watch it",
     "video.title": "See it working with a real iPhone",
-    "video.sub": "A 100-second tour filmed from the real app: plug in the phone, it connects by itself, change resolution and zoom live, then pick Webcamo in your call. Narrated in Egyptian Arabic.",
+    "video.sub": "A 95-second tour filmed from the real app: plug in the phone, it connects by itself, change resolution and zoom live, then pick Webcamo in your call. Narrated in English.",
 
     "how.kick": "how",
     "how.title": "Three steps, once",
@@ -262,6 +262,20 @@ function applyLanguage(lang) {
   document.title = `Webcamo: ${t("hero.title", vars).replace(/<[^>]+>/g, "")}`;
   // New .hl spans must animate; marker strokes re-fit to the new text.
   window.nbScan?.(); window.nbRefit?.();
+  setDemoVideos(lang);
+}
+
+// The demo video follows the page language: demo-en.mp4 in English, demo-ar.mp4 in Arabic.
+function setDemoVideos(lang) {
+  const name = lang === "en" ? "demo-en" : "demo-ar";
+  [["intro", "intro-src"], ["hero-preview-vid", "hero-preview-src"]].forEach(([vid, srcId]) => {
+    const v = document.getElementById(vid), src = document.getElementById(srcId);
+    if (!v || !src || src.getAttribute("src") === `./assets/${name}.mp4`) return;
+    src.setAttribute("src", `./assets/${name}.mp4`);
+    v.setAttribute("poster", `./assets/${name}.jpg`);
+    v.load();
+    if (v.autoplay) v.play().catch(() => {});
+  });
 }
 
 function applyTheme(theme) {
@@ -396,6 +410,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // If the demo video is missing (e.g. not deployed yet), hide its section
 // rather than showing a broken player; the hero falls back to its poster.
-document.getElementById("intro-src")?.addEventListener("error", () => {
+// A missing English copy falls back to the Arabic one first.
+document.getElementById("intro-src")?.addEventListener("error", (e) => {
+  if (e.target.getAttribute("src").includes("demo-en")) { e.target.setAttribute("src", "./assets/demo-ar.mp4"); document.getElementById("intro")?.load(); return; }
   document.getElementById("demo")?.setAttribute("hidden", "");
 });

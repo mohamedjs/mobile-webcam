@@ -1,0 +1,13 @@
+[
+ { "id": "n1", "text": "This is Webcamo. Plug your phone in with a cable, and it becomes a high-quality webcam, on Linux, Mac and Windows.", "style": "warm, confident intro, natural brisk conversational pace, no long pauses" },
+ { "id": "n2", "text": "Laptop cameras usually look washed out and noisy, and Wi-Fi webcam apps freeze and drop out in the middle of a meeting.", "style": "relatable, a little tired, natural brisk conversational pace, no long pauses" },
+ { "id": "n3", "text": "Yet the phone in your pocket has a far better camera than any laptop.", "style": "light, a bit playful, natural brisk conversational pace, no long pauses" },
+ { "id": "n4", "text": "The idea is simple. The phone runs a small server and encodes the video in hardware, and the computer pulls the stream over the USB cable. No internet, no account, no cloud.", "style": "clear, explaining, natural brisk conversational pace, no long pauses" },
+ { "id": "n5", "text": "On the computer, Webcamo turns that stream into a virtual camera, so any app, Zoom, Meet or OBS, sees it as a normal webcam.", "style": "clear, confident, natural brisk conversational pace, no long pauses" },
+ { "id": "n6", "text": "Installing is easy: a Setup file for Windows, a DMG for Mac, and a DEB or AppImage for Linux. And on the phone, the Webcamo app for Android and iPhone.", "style": "practical, upbeat, natural brisk conversational pace, no long pauses" },
+ { "id": "n7", "text": "Open Webcamo on your computer and plug in your phone. It finds the phone by itself, opens the connection, and starts the stream.", "style": "guiding, calm, natural brisk conversational pace, no long pauses" },
+ { "id": "n8", "text": "From the dashboard you control everything: resolution, frame rate, lens, zoom and lighting. You change them while you're live, and your camera never disappears for the people in the call.", "style": "confident, showing off a little, natural brisk conversational pace, no long pauses" },
+ { "id": "n9", "text": "If the cable gets pulled, or the phone gets hot, Webcamo recovers by itself. It lowers the quality until the phone cools down, then brings it back.", "style": "reassuring, steady, natural brisk conversational pace, no long pauses" },
+ { "id": "n10", "text": "And in your meeting, you just pick Webcamo from the camera list. That's it.", "style": "light, satisfied, natural brisk conversational pace, no long pauses" },
+ { "id": "n11", "text": "Webcamo. Your phone is now your webcam. Download it from this page.", "style": "warm, upbeat outro, natural brisk conversational pace, no long pauses" }
+]

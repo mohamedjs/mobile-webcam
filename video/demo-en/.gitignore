@@ -1,0 +1,8 @@
+clips/
+vo/
+audio/
+hf/
+*.mp4
+timing.json
+vo-draft/
+*.log

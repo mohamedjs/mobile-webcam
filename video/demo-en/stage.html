@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<title>Webcamo demo stage (English, Notebook)</title>
+<link rel="stylesheet" href="remixicon.css">
+<style>
+/* Notebook design system: cream dotted paper, white paper cards with tape, ink text,
+   one marker orange, highlighter yellow, handwritten labels (Caveat). LTR, English. */
+@font-face { font-family: Inter; src: url(fonts/inter-latin-400-normal.woff2); font-weight: 400; }
+@font-face { font-family: Inter; src: url(fonts/inter-latin-700-normal.woff2); font-weight: 700; }
+@font-face { font-family: Inter; src: url(fonts/inter-latin-800-normal.woff2); font-weight: 800; }
+@font-face { font-family: Hand; src: url(fonts/caveat-latin.woff2); font-weight: 400 700; }
+:root { --paper: #F3EEE4; --paper-2: #EAE3D5; --card: #FFFFFF; --ink: #1A1714; --mute: #6B6358; --line: #DCD3C2;
+  --marker: #E2572B; --hl: #FFD84D; --good: #2F8F5B;
+  --tape: rgba(255, 255, 255, .7); --tape-line: rgba(26, 23, 20, .08);
+  --sh: 0 16px 34px -10px rgba(70, 50, 25, .22); --sh-deep: 0 30px 60px -18px rgba(70, 50, 25, .34); }
+* { box-sizing: border-box; margin: 0; }
+html, body { background: var(--paper); overflow: hidden; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; font-family: Inter, sans-serif; color: var(--ink); }
+#bg { position: absolute; inset: 0; background-color: var(--paper); background-image: radial-gradient(rgba(26, 23, 20, .12) 2px, transparent 2.4px); background-size: 52px 52px; background-position: 26px 26px; }
+.layer { position: absolute; inset: 0; display: none; }
+.ri { line-height: 1; }
+.hand { font-family: Hand, cursive; font-weight: 600; }
+.tape { position: absolute; z-index: 3; width: 132px; height: 36px; background: var(--tape); border: 1px solid var(--tape-line); box-shadow: 0 2px 6px rgba(70, 50, 25, .08); }
+.tape.top { left: 50%; top: -18px; margin-left: -66px; transform: rotate(-3deg); }
+.tape.tl { left: -36px; top: -4px; transform: rotate(-34deg); }
+.tape.tr { right: -36px; top: -4px; transform: rotate(34deg); }
+
+/* scene header: handwritten kicker on a white tab, big ink title with a highlighter sweep and a marker underline */
+.head { position: absolute; top: 54px; left: 96px; right: 96px; }
+.kick { display: inline-block; padding: 2px 20px 6px; background: var(--card); box-shadow: var(--sh); transform: rotate(-2deg);
+  font: 600 46px/1.15 Hand, cursive; color: var(--marker); }
+.head h2 { position: relative; display: inline-flex; align-items: center; gap: 22px; margin-top: 12px; font-weight: 800; font-size: 72px; letter-spacing: -1.5px; line-height: 1.1; white-space: nowrap; }
+.head h2 .ri { font-size: 62px; color: var(--marker); }
+.hl { position: relative; z-index: 0; white-space: nowrap; }
+.hl i.sw { position: absolute; z-index: -1; left: -8px; right: -8px; top: 22%; bottom: 2%; background: var(--hl); border-radius: 6px; transform-origin: 0 50%; transform: skewX(-8deg) scaleX(0); }
+svg.ul { position: absolute; left: 0; bottom: -26px; height: 30px; overflow: visible; }
+svg.ul path { fill: none; stroke: var(--marker); stroke-width: 7; stroke-linecap: round; }
+
+/* footage on a white paper card */
+.frame { position: absolute; left: 96px; top: 250px; width: 1248px; height: 702px; padding: 14px; background: var(--card); box-shadow: var(--sh-deep); transform-origin: 50% 50%; }
+.frame .clipbox { width: 100%; height: 100%; overflow: hidden; background: #000; border-radius: 3px; }
+.frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.side { position: absolute; left: 1420px; top: 300px; width: 410px; display: flex; flex-direction: column; gap: 46px; }
+.sticky { position: relative; padding: 34px 30px 30px; background: var(--hl); color: var(--ink); box-shadow: 0 18px 30px -12px rgba(70, 50, 25, .3);
+  font-weight: 800; font-size: 34px; line-height: 1.28; }
+.sticky .tape.top { width: 100px; margin-left: -50px; background: rgba(255, 255, 255, .55); }
+.sticky .ri { display: block; font-size: 44px; color: var(--marker); margin-bottom: 10px; }
+.mark { position: absolute; left: 140px; top: 280px; padding: 12px 30px 16px; font-weight: 800; font-size: 38px; color: #fff; background: var(--marker); box-shadow: var(--sh); opacity: 0; }
+
+/* title / outro */
+.logo { position: absolute; left: 50%; top: 120px; width: 1700px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.logo .pic { position: relative; padding: 16px; background: var(--card); box-shadow: var(--sh-deep); transform: rotate(-2deg); }
+.logo img { display: block; width: 220px; height: 220px; border-radius: 40px; }
+.logo h1 { position: relative; font-weight: 800; font-size: 140px; letter-spacing: -4px; line-height: 1.1; margin-top: 38px; white-space: nowrap; }
+.logo p { font-weight: 700; font-size: 46px; color: var(--mute); margin-top: 18px; }
+.note { position: absolute; left: 1290px; top: 330px; font: 600 54px/1 Hand, cursive; color: var(--marker); transform: rotate(-6deg); white-space: nowrap; }
+.note svg { position: absolute; left: -150px; top: 30px; width: 140px; height: 80px; overflow: visible; }
+.note svg path { fill: none; stroke: var(--marker); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.tiles { position: absolute; left: 50%; top: 770px; width: 1800px; transform: translateX(-50%); display: flex; gap: 34px; justify-content: center; }
+.tile { position: relative; min-width: 200px; display: flex; flex-direction: column; align-items: center; gap: 10px; background: var(--card); box-shadow: var(--sh); padding: 26px 26px 20px; font-weight: 800; font-size: 30px; white-space: nowrap; }
+.tile:nth-child(odd) { rotate: -1.5deg; } .tile:nth-child(even) { rotate: 1.2deg; }
+.tile .ri { font-size: 54px; color: var(--marker); }
+.url { position: absolute; left: 50%; top: 960px; font-weight: 700; font-size: 36px; background: var(--ink); color: var(--paper); padding: 14px 38px 18px; white-space: nowrap; }
+.url .ri { color: var(--hl); margin-right: 14px; vertical-align: -5px; }
+
+/* bullets: white paper cards with tape */
+.grid { position: absolute; top: 300px; left: 96px; right: 96px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px 60px; }
+.card { position: relative; display: flex; gap: 26px; align-items: center; background: var(--card); box-shadow: var(--sh); padding: 40px 40px 42px; }
+.grid .card:nth-child(1) { rotate: -1deg; } .grid .card:nth-child(2) { rotate: .8deg; } .grid .card:nth-child(3) { rotate: .6deg; } .grid .card:nth-child(4) { rotate: -.7deg; }
+.card .ri { font-size: 64px; color: var(--marker); flex: none; }
+.card b { display: block; font-weight: 800; font-size: 44px; letter-spacing: -.5px; }
+.card small { display: block; font-weight: 400; font-size: 31px; color: var(--mute); margin-top: 8px; line-height: 1.35; }
+
+/* diagram: paper cards joined by ink lines, the flow draws in marker orange */
+.dia { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.dia svg { position: absolute; inset: 0; overflow: visible; }
+.dia path.e { fill: none; stroke: #CFC6B4; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 0; }
+.dia path.e.on { stroke: var(--marker); stroke-width: 7; }
+.dia circle.pk { fill: var(--marker); }
+.node { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--card); box-shadow: var(--sh); padding: 26px 30px 24px; min-width: 250px; text-align: center; }
+.node .ri { font-size: 56px; color: var(--ink); }
+.node b { font-weight: 800; font-size: 32px; white-space: nowrap; }
+.node small { font-weight: 700; font-size: 22px; color: var(--mute); white-space: nowrap; }
+.node.on { box-shadow: 0 0 0 5px var(--marker), var(--sh); }
+.node.on .ri { color: var(--marker); }
+.cap2 { position: absolute; left: 50%; bottom: 52px; background: var(--card); color: var(--ink); box-shadow: var(--sh); padding: 16px 36px 20px; font-weight: 800; font-size: 34px; white-space: nowrap; }
+.cap2 .n { display: inline-block; background: var(--hl); color: var(--ink); min-width: 52px; text-align: center; margin-right: 16px; padding: 0 12px; font-family: Hand, cursive; font-size: 40px; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="bg"></div><div id="layers"></div></div>
+<script>
+const T = window.TIMING, B = T.brand || {};
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = x => 1 - Math.pow(1 - clamp(x), 3);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ri = n => n ? `<i class="ri ${n.startsWith('ri-') ? n : 'ri-' + n + '-line'}"></i>` : '';
+const tape = (k = 'top') => `<i class="tape ${k}"></i>`;
+const withHl = (text, hl) => { const t = esc(text); if (!hl) return t; const h = esc(hl), i = t.lastIndexOf(h);
+  return i < 0 ? t : t.slice(0, i) + `<span class="hl"><i class="sw"></i>${h}</span>` + t.slice(i + h.length); };
+// a hand-drawn marker stroke (slightly wavy), drawn on with stroke-dashoffset
+const stroke = w => `M4,18 C${w * .25},8 ${w * .55},26 ${w * .8},14 S${w - 6},16 ${w - 4},12`;
+const head = s => s.title ? `<div class="head">${s.kick ? `<span class="kick a0">${esc(s.kick)}</span><br>` : ''}<h2 class="a0">${ri(s.icon)}<span class="tt">${withHl(s.title, s.hl)}</span><svg class="ul"><path/></svg></h2></div>` : '';
+const L = document.getElementById('layers');
+
+function edgePath(a, b) {   // node a → node b, trimmed near the card edges
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+  const tx = 165, ty = 105;
+  const x1 = a.x + ux * tx, y1 = a.y + uy * ty, x2 = b.x - ux * tx, y2 = b.y - uy * ty;
+  return `M${x1},${y1} L${x2},${y2}`;
+}
+
+for (const s of T.scenes) {
+  const el = document.createElement('div'); el.className = 'layer'; el.id = 'S-' + s.id;
+  if (s.type === 'title' || s.type === 'outro') el.innerHTML = `<div class="logo a0">${B.logo ? `<div class="pic">${tape('top')}<img src="${B.logo}"></div>` : ''}<h1><span class="hl"><i class="sw"></i>${esc(s.title)}</span></h1><p>${esc(s.sub)}</p></div>
+    ${s.note ? `<div class="note a3"><svg viewBox="0 0 140 80"><path d="M134,20 C100,6 60,10 30,40 M30,40 l4,-22 M30,40 l22,2"/></svg>${esc(s.note)}</div>` : ''}
+    <div class="tiles">${(s.tiles || []).map((t, i) => `<div class="tile a${i + 1}">${tape('top')}${ri(t.icon)}${esc(t.text)}</div>`).join('')}</div>
+    ${s.url ? `<div class="url a9">${ri('global')}${esc(s.url)}</div>` : ''}`;
+  if (s.type === 'shot') el.innerHTML = `${head(s)}<div class="frame">${tape('tl')}${tape('tr')}<div class="clipbox"><img></div></div>
+    <div class="side">${(s.points || []).map((p, i) => `<div class="sticky a${i + 2}" style="rotate:${i % 2 ? 2 : -2}deg">${tape('top')}${ri(p.icon || 'checkbox-circle')}<span>${esc(p.text)}</span></div>`).join('')}</div>
+    <div class="mark"></div>`;
+  if (s.type === 'bullets') el.innerHTML = `${head(s)}<div class="grid">${(s.items || []).map((t, i) => `<div class="card a${i + 1}"${t.at != null ? ` data-at="${t.at}"` : ''}>${tape(i % 2 ? 'tr' : 'tl')}${ri(t.icon)}<div><b>${esc(t.text)}</b>${t.sub ? `<small>${esc(t.sub)}</small>` : ''}</div></div>`).join('')}</div>`;
+  if (s.type === 'diagram') {
+    const N = Object.fromEntries(s.nodes.map(n => [n.id, n]));
+    const edges = s.edges.map((e, i) => `<path class="e" id="${s.id}-e${i}" d="${edgePath(N[e.from], N[e.to])}"/>`).join('');
+    el.innerHTML = `${head(s)}<div class="dia"><svg viewBox="0 0 1920 1080">${edges}<circle class="pk" r="13" cx="-99" cy="-99"/></svg>
+      ${s.nodes.map((n, i) => `<div class="node" id="${s.id}-n-${n.id}" style="left:${n.x}px;top:${n.y}px">${tape(i % 2 ? 'tr' : 'tl')}${ri(n.icon)}<b>${esc(n.label)}</b>${n.tech ? `<small>${esc(n.tech)}</small>` : ''}</div>`).join('')}
+      </div><div class="cap2" style="opacity:0"></div>`;
+  }
+  L.append(el);
+}
+// size the marker underlines once the fonts are in
+function sizeStrokes() {
+  document.querySelectorAll('.head h2').forEach(h => { const tt = h.querySelector('.tt'), svg = h.querySelector('svg.ul'), p = svg.querySelector('path');
+    const w = tt.offsetWidth, x = tt.offsetLeft; svg.style.left = x + 'px'; svg.setAttribute('width', w); svg.setAttribute('viewBox', `0 0 ${w} 30`); p.setAttribute('d', stroke(w)); });
+}
+let sized = false;
+
+let lastSrc = '';
+async function render(t) {
+  const s = T.scenes.find(x => t >= x.start && t < x.start + x.dur) || T.scenes[T.scenes.length - 1];
+  const lt = t - s.start, fade = clamp((s.dur - lt) / .3);
+  for (const el of L.children) el.style.display = el.id === 'S-' + s.id ? 'block' : 'none';
+  const el = document.getElementById('S-' + s.id);
+  sizeStrokes();
+  el.querySelectorAll('[class*=" a"], [class^="a"]').forEach(n => {   // staggered entrances .a0 .a1 … every 0.3 s, .a9 last
+    const m = n.className.match(/\ba(\d)\b/); if (!m) return;
+    const d = n.dataset.at != null ? +n.dataset.at : (m[1] === '9' ? 2 : (+m[1]) * .3), k = ease((lt - d) / .5);
+    const base = n.matches('.logo, .tiles, .url') ? 'translateX(-50%) ' : '';
+    n.style.opacity = Math.min(k, fade); n.style.transform = `${base}translateY(${(1 - k) * 40}px)`;
+  });
+  // highlighter sweeps and marker underline draw on after the title lands
+  el.querySelectorAll('.hl i.sw').forEach(sw => { const k = ease((lt - .55) / .6); sw.style.transform = `skewX(-8deg) scaleX(${k})`; });
+  el.querySelectorAll('svg.ul path, .note svg path').forEach(p => { const len = p.getTotalLength() || 1, k = ease((lt - (p.closest('.note') ? 1.3 : .8)) / .7);
+    p.style.strokeDasharray = len; p.style.strokeDashoffset = len * (1 - k); });
+  if (s.type === 'shot') {
+    const f = el.querySelector('.frame'), img = f.querySelector('img');
+    const i = Math.min((s.frames || 1) - 1, Math.floor(lt * (s.fps || 15)));
+    const src = `clips/${s.clip}/${String(i).padStart(4, '0')}.jpg`;
+    if (src !== lastSrc) { img.src = src; lastSrc = src; await img.decode().catch(() => {}); }
+    const k = ease(lt / .55); f.style.opacity = fade; f.style.transform = `rotate(${-.6 * k}deg) scale(${(.94 + .06 * k) * (1 + .02 * lt / s.dur)})`;
+    const mk = el.querySelector('.mark'), cur = [...(s.marks || [])].reverse().find(m => lt >= m.at);
+    if (cur) { mk.innerHTML = ri(cur.icon) + esc(cur.text); mk.style.opacity = Math.min(1, (lt - cur.at) / .3) * fade; } else mk.style.opacity = 0;
+  }
+  if (s.type === 'diagram') {
+    s.nodes.forEach((n, i) => { const k = ease((lt - .3 - i * .22) / .45), d = document.getElementById(`${s.id}-n-${n.id}`);
+      d.style.opacity = Math.min(k, fade); d.style.transform = `translate(-50%, -50%) rotate(${i % 2 ? .8 : -.8}deg) scale(${.7 + .3 * k})`; d.classList.remove('on'); });
+    const tEdges = .3 + s.nodes.length * .22 + .2;
+    s.edges.forEach((e, i) => { const p = document.getElementById(`${s.id}-e${i}`), L2 = p.getTotalLength(), k = ease((lt - tEdges - i * .12) / .5);
+      p.style.strokeDasharray = L2; p.style.strokeDashoffset = L2 * (1 - k); p.style.opacity = fade; p.classList.remove('on'); });
+    const flow = s.flow || [], t0 = tEdges + s.edges.length * .12 + .5, span = Math.max(.8, (s.dur - t0 - .6) / Math.max(1, flow.length));
+    const pk = el.querySelector('circle.pk'), cap = el.querySelector('.cap2');
+    pk.setAttribute('cx', -99); cap.style.opacity = 0; cap.style.transform = 'translateX(-50%) rotate(-.6deg)';
+    flow.forEach((f, i) => {
+      const at = Math.max(f.at ?? (t0 + i * span), t0 + i * .5), next = Math.max(flow[i + 1]?.at ?? (at + span), t0 + (i + 1) * .5);
+      if (lt < at || lt >= next) return;
+      const k = clamp((lt - at) / Math.min(1.1, (next - at) * .7));
+      const ei = s.edges.findIndex(e => e.from === f.from && e.to === f.to);
+      document.getElementById(`${s.id}-n-${f.from}`).classList.add('on');
+      if (k >= 1) document.getElementById(`${s.id}-n-${f.to}`).classList.add('on');
+      if (ei >= 0) { const p = document.getElementById(`${s.id}-e${ei}`); p.classList.add('on');
+        const pt = p.getPointAtLength(p.getTotalLength() * ease(k)); pk.setAttribute('cx', pt.x); pk.setAttribute('cy', pt.y); }
+      if (f.text) { cap.innerHTML = `<span class="n">${i + 1}</span>${esc(f.text)}`; cap.style.opacity = Math.min(1, (lt - at) / .3) * fade; }
+    });
+  }
+}
+window.render = render;
+</script>
+</body>
+</html>

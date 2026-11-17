@@ -1,0 +1,57 @@
+{
+  "brand": { "logo": "img/logo.png" },
+  "scenes": [
+    { "id": "title", "type": "title", "vo": "n1", "title": "Webcamo", "sub": "Your phone becomes a webcam, over a cable", "note": "plug in · go live",
+      "tiles": [ { "icon": "ubuntu", "text": "Linux" }, { "icon": "apple", "text": "macOS" },
+                 { "icon": "windows", "text": "Windows" }, { "icon": "usb", "text": "USB cable" } ] },
+
+    { "id": "problem", "type": "bullets", "vo": ["n2", "n3"], "kick": "the problem", "title": "Meetings look bad", "hl": "bad", "icon": "emotion-unhappy",
+      "items": [
+        { "icon": "camera-off", "text": "Weak laptop camera", "sub": "Washed out and noisy" },
+        { "icon": "wifi-off", "text": "Wi-Fi lets you down", "sub": "Freezes and drops mid-meeting" },
+        { "icon": "smartphone", "text": "The fix is in your pocket", "sub": "Your phone's camera is far better", "vo": "n3" } ] },
+
+    { "id": "how", "type": "diagram", "vo": ["n4", "n5"], "kick": "how it works", "title": "The phone is the server", "hl": "server", "icon": "flow-chart",
+      "nodes": [
+        { "id": "phone", "label": "Phone", "icon": "smartphone", "tech": "H.264 · fMP4 · port 8080", "x": 330, "y": 450 },
+        { "id": "usb", "label": "USB cable", "icon": "usb", "tech": "iproxy · adb forward", "x": 860, "y": 450 },
+        { "id": "desk", "label": "Webcamo on the computer", "icon": "computer", "tech": "Node.js · ffmpeg", "x": 1440, "y": 450 },
+        { "id": "cam", "label": "Virtual camera", "icon": "webcam", "tech": "v4l2loopback", "x": 1440, "y": 800 },
+        { "id": "apps", "label": "Your apps", "icon": "vidicon", "tech": "Zoom · Meet · OBS", "x": 860, "y": 800 } ],
+      "edges": [
+        { "from": "phone", "to": "usb" }, { "from": "usb", "to": "desk" },
+        { "from": "desk", "to": "cam" }, { "from": "cam", "to": "apps" } ],
+      "flow": [
+        { "from": "phone", "to": "usb", "text": "The phone encodes in hardware and runs a small server", "vo": "n4" },
+        { "from": "usb", "to": "desk", "text": "The computer pulls the stream over the cable, no internet" },
+        { "from": "desk", "to": "cam", "text": "Webcamo turns the stream into a virtual camera", "vo": "n5" },
+        { "from": "cam", "to": "apps", "text": "Any app sees it as a normal webcam" } ] },
+
+    { "id": "install", "type": "shot", "vo": "n6", "clip": "install", "fps": 15, "frame": "screen",
+      "kick": "step 1", "title": "Install", "icon": "download-2",
+      "points": [ { "icon": "computer", "text": "Windows, macOS and Linux" }, { "icon": "smartphone", "text": "Phone app for Android and iPhone" } ] },
+
+    { "id": "connect", "type": "shot", "vo": "n7", "clip": "connect", "fps": 15, "frame": "screen",
+      "kick": "step 2", "title": "Plug in and go", "icon": "plug",
+      "points": [ { "icon": "search-eye", "text": "Finds the phone by itself" }, { "icon": "live", "text": "The stream starts right away" } ] },
+
+    { "id": "settings", "type": "shot", "vo": "n8", "clip": "settings", "fps": 13, "frame": "screen",
+      "kick": "step 3", "title": "Tune it live", "icon": "equalizer-2",
+      "points": [ { "icon": "hd", "text": "Resolution, frame rate and zoom" }, { "icon": "eye", "text": "Your camera never drops from the call" } ] },
+
+    { "id": "reliable", "type": "bullets", "vo": "n9", "kick": "no babysitting", "title": "It recovers by itself", "hl": "by itself", "icon": "shield-check",
+      "items": [
+        { "icon": "plug", "text": "Cable pulled?", "sub": "It reconnects on its own" },
+        { "icon": "temp-hot", "text": "Phone got hot?", "sub": "Lowers quality until it cools" },
+        { "icon": "restart", "text": "Then", "sub": "Brings the quality back" } ] },
+
+    { "id": "meeting", "type": "shot", "vo": "n10", "clip": "meeting", "fps": 15, "frame": "screen",
+      "kick": "step 4", "title": "In your meeting", "icon": "vidicon",
+      "points": [ { "icon": "list-check", "text": "Pick Webcamo from the camera list" } ] },
+
+    { "id": "outro", "type": "outro", "vo": "n11", "title": "Webcamo", "sub": "Your phone is now your webcam", "note": "open source · runs on your desk",
+      "tiles": [ { "icon": "ubuntu", "text": "Linux" }, { "icon": "apple", "text": "macOS" },
+                 { "icon": "windows", "text": "Windows" }, { "icon": "github", "text": "GitHub" } ],
+      "url": "mohamedjs.github.io/mobile-webcam" }
+  ]
+}
